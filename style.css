@@ -1,0 +1,10 @@
+body {
+  margin: auto;
+  width: fit-content;
+}
+
+#root {
+  width: fit-content;
+  display: flex;
+  gap: 32px;
+}
