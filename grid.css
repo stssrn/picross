@@ -1,3 +1,7 @@
+:root {
+  --cell-size: 24px;
+}
+
 .grid {
   font-family: "Museo Sans Rounded", sans-serif;
   font-weight: 600;
@@ -63,6 +67,7 @@
   width: 96px;
   text-align: right;
   letter-spacing: 0.2em;
+  min-height: var(--cell-size);
   user-select: none;
 }
 
@@ -71,7 +76,17 @@
 /*   background-color: lightblue; */
 }
 
-.row:nth-child(2n) .label {
+/* keep the border of the grid in mind */
+.top-row .label:first-child {
+  max-width: calc(1px + var(--cell-size));
+  width: calc(1px + var(--cell-size));
+}
+
+.row-labels .label:first-child {
+  height: calc(1px + var(--cell-size));
+}
+
+.row-labels .label:nth-child(2n + 1) {
   background: linear-gradient(to right, transparent, lightblue 48px);
 }
 
@@ -79,7 +94,7 @@
   border-bottom: none;
 }
 
-.row .label {
+.row-labels .label {
   display: flex;
   justify-content: end;
   align-items: center;
@@ -99,8 +114,8 @@
   align-items: end;
   justify-content: center;
   word-break: break-all;
-  width: 24px;
-  max-width: 24px;
+  width: var(--cell-size);
+  max-width: var(--cell-size);
   box-sizing: border-box;
   border: none;
   padding-bottom: 4px;
@@ -111,4 +126,14 @@
 
 .label-text {
   text-align: center;
+}
+
+.row-labels {
+  float: left;
+}
+.cell-container {
+  float: right;
+  font-size: 0;
+  max-width: calc(10 * var(--cell-size));
+  border: 1px solid var(--bc);
 }

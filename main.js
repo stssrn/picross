@@ -232,6 +232,21 @@ function elCellClickHandler(ev)
 	}
 }
 
+/*
+composing components
+* components have a state
+* components take a mounting node, initialize on it, and the caller
+* can append it to a visible node.
+const gridWithLabelsOptions = {
+	grid,
+	labels,
+	puzzle,
+}
+function gridWithLabelsInitDOM(root, grid, labels)
+{
+}
+*/
+
 // NOTE: labels and grid should be decomposed because the creator
 //       doesn't need labels
 /** init dom nodes for the grid */
@@ -253,14 +268,20 @@ function gridInitDOM(root, grid)
 	const info        = div.cloneNode(),
 	      row         = div.cloneNode(),
 	      cell        = div.cloneNode(),
-	      topRow      = div.cloneNode(),
+	      colLabels      = div.cloneNode(),
+	      rowLabels      = div.cloneNode(),
+	      rowLabelsGridDiv      = div.cloneNode(),
+	      gridNode      = div.cloneNode(),
 	      label       = div.cloneNode(),
 	      labelText   = span.cloneNode();
 	
 	root.classList.add("grid");
+	gridNode.classList.add("cell-container");
 	row.classList.add("row");
 	cell.classList.add("cell");
-	topRow.classList.add("top-row");
+	colLabels.classList.add("top-row");
+	rowLabels.classList.add("row-labels");
+	rowLabelsGridDiv.classList.add("row-labels-grid-container");
 	label.classList.add("label");
 	labelText.classList.add("label-text");
 	
@@ -271,33 +292,33 @@ function gridInitDOM(root, grid)
 		      t = labelText.cloneNode();
 		t.textContent = cLabels[i].join(" ");
 		l.appendChild(t);
-		topRow.appendChild(l);
+		colLabels.appendChild(l);
 	}
-	root.appendChild(topRow);
 	
 	// left labels and cells
-	let cellKey = 0;
 	for (let i=0; i<rLabels.length; i++)
 	{
 		// label
-		const r  = row.cloneNode(),
-		      l  = label.cloneNode(),
+		const l  = label.cloneNode(),
 		      lt = labelText.cloneNode();
 		lt.textContent = rLabels[i].join(" ");
 		l.appendChild(lt);
-		r.appendChild(l);
-	
-		// cells
-		for (let j=0; j<grid.cols; j++)
-		{
-			const k = cellKey++;
-			const node = cell.cloneNode();
-			CELL_POS_NODE_ARRAY[k] = node;
-			NODE_CELL_POS_MAP.set(node, k);
-			r.appendChild(node);
-		}
-		root.appendChild(r);
+		rowLabels.appendChild(l);
 	}
+	
+	// cells
+	for (let i=0; i<grid.rows*grid.cols; i++)
+	{
+		const node = cell.cloneNode();
+		CELL_POS_NODE_ARRAY[i] = node;
+		NODE_CELL_POS_MAP.set(node, i);
+		gridNode.appendChild(node);
+	}
+
+	root.appendChild(colLabels);
+	rowLabelsGridDiv.appendChild(rowLabels);
+	rowLabelsGridDiv.appendChild(gridNode);
+	root.appendChild(rowLabelsGridDiv);
 	
 	root.addEventListener("click", elCellClickHandler.bind(CELL_FILL));
 	root.addEventListener("contextmenu", elCellClickHandler.bind(CELL_MARK));
