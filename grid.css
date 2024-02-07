@@ -133,7 +133,7 @@
 
 .cell-container {
   font-size: 0;
-  max-width: calc(10 * var(--cell-size));
+  max-width: calc(var(--cols) * var(--cell-size));
   border: 1px solid var(--bc);
 }
 

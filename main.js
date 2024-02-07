@@ -12,6 +12,7 @@ TODO:
 	  total cells. The closer it is to 1, the easier it is.
 	* add hints maybe?
 	* scores need to be saved in the browser.
+	* column and row sizes need to be remembered
 	* add some sort of animation after completion
 	* efficient dom updates in timed mode instead of rebuilding the grid from
 	  scratch
@@ -69,11 +70,13 @@ const MODE_MAIN_MENU = 0,
       MODE_TIMED     = 3,
       MODE_CREATOR   = 4;
 
-// NOTE: yes the grid is global. no its not a problem because there is only 1
-//       grid at most and it simplifies the code
-let GRID,
-    CELL_POS_NODE_ARRAY,
-    NODE_CELL_POS_MAP;
+/** user action states */
+const ACT_RCLICK = 0,
+      ACT_LCLICK = 1;
+
+/** default values */
+const DEFAULT_ROWS = 5,
+      DEFAULT_COLS = 5;
 
 /** create a new grid */
 function gridCreate(rows, cols)
@@ -193,22 +196,24 @@ function gridLabels(grid)
 	return [rLabels, cLabels];
 }
 
-// NOTE: needs update, works but terribly inefficient
-/** check if two grids are equal. grids must be the same size */
-function gridEq(g1, g2)
+/** a grid is correct if it has the same labels as the solution  */
+function gridCheck(g1, rLabels, cLabels)
 {
-	const labels1 = gridLabels(g1),
-	      labels2 = gridLabels(g2);
+	const labels1 = [rLabels, cLabels],
+	      labels2 = gridLabels(g1);
 
 	// row/col labels
-	console.log(labels1);
-	for (let i=1; i<labels1.length; i++)
+	for (let i=0; i<labels1.length; i++)
 	{
+		if (labels1[i].length !== labels2[i].length)
+		   return false
 		// row labels / col labels
-		for (let j=1; j<labels1[i].length; j++)
+		for (let j=0; j<labels1[i].length; j++)
 		{
+			if (labels1[i][j].length !== labels2[i][j].length)
+				return false
 			// row count / col count
-			for (let k=1; k<labels1[i][k].length; k++)
+			for (let k=0; k<labels1[i][j].length; k++)
 			{
 				if (labels1[i][j][k] !== labels2[i][j][k])
 					return false;
@@ -218,41 +223,8 @@ function gridEq(g1, g2)
 	return true;
 }
 
-function elCellStateSet(el, state)
+function gridWithLabelsInitDOM(ctx, root)
 {
-	el.setAttribute("state", state);
-}
-
-/** @this CELL_MARK|CELL_FILL */
-function elCellClickHandler(ev)
-{
-	if (ev.target.classList.contains("cell"))
-	{
-		// prevent opening the right click context menu
-		ev.preventDefault();
-		const n = NODE_CELL_POS_MAP.get(ev.target);
-		const state = gridGet(GRID, n) === this ? CELL_EMPTY : this;
-		gridSet(GRID, state, n);
-		elCellStateSet(ev.target, state)
-		console.debug(gridString(GRID));
-	}
-}
-
-/*
-composing components
-* components have a state
-* components take a mounting node, initialize on it, and the caller
-* can append it to a visible node.
-const gridWithLabelsOptions = {
-	grid,
-	labels,
-	puzzle,
-}
-*/
-
-function gridWithLabelsInitDOM(root, grid, rLabels, cLabels)
-{
-
 	const div  = document.createElement("div"),
 	      span = document.createElement("span");
 
@@ -271,27 +243,27 @@ function gridWithLabelsInitDOM(root, grid, rLabels, cLabels)
 	rowLabelsGridDiv.classList.add("row-labels-grid-container");
 
 	// top row labels
-	for (let i=0; i<cLabels.length; i++)
+	for (let i=0; i<ctx.cLabels.length; i++)
 	{
 		const l = label.cloneNode(),
 		      t = labelText.cloneNode();
-		t.textContent = cLabels[i].join(" ");
+		t.textContent = ctx.cLabels[i].join('\n');
 		l.appendChild(t);
 		colLabels.appendChild(l);
 	}
 	
 	// left labels
-	for (let i=0; i<rLabels.length; i++)
+	for (let i=0; i<ctx.rLabels.length; i++)
 	{
 		// label
 		const l  = label.cloneNode(),
 		      lt = labelText.cloneNode();
-		lt.textContent = rLabels[i].join(" ");
+		lt.textContent = ctx.rLabels[i].join(' ');
 		l.appendChild(lt);
 		rowLabels.appendChild(l);
 	}
 
-	gridInitDOM(gridNode, grid);
+	gridInitDOM(ctx, gridNode);
 
 	root.appendChild(colLabels);
 	rowLabelsGridDiv.appendChild(rowLabels);
@@ -299,11 +271,39 @@ function gridWithLabelsInitDOM(root, grid, rLabels, cLabels)
 	root.appendChild(rowLabelsGridDiv);
 }
 
-/** init dom nodes for the grid */
-function gridInitDOM(root, grid)
+function gridEventHandlerDOM(ctx, ev)
 {
-	CELL_POS_NODE_ARRAY = new Array(grid.cols*grid.rows);
-	NODE_CELL_POS_MAP = new Map();
+	if (ev.target.classList.contains("cell"))
+	{
+		const p = ctx.nodeCellPosMap.get(ev.target);
+		const cellAction = ctx.action === ACT_RCLICK
+			? CELL_FILL
+			: CELL_MARK;
+		const state = gridGet(ctx.grid, p) === cellAction
+			? CELL_EMPTY
+			: cellAction;
+
+		gridSet(ctx.grid, state, p);
+		ev.target.setAttribute("state", state);
+		if (gridCheck(ctx.grid, ctx.rLabels, ctx. cLabels))
+		{
+			clearInterval(ctx.timerId);
+			// NOTE: play some animation
+			if (ctx.mode === MODE_CLASSIC)
+			{
+				ctx.gridNode.style.pointerEvents = "none";
+			}
+		}
+	}
+}
+
+/** init dom nodes for the grid */
+function gridInitDOM(ctx, root)
+{
+	ctx.cellPosNodeArray = new Array(ctx.grid.cols*ctx.grid.rows);
+	ctx.nodeCellPosMap = new Map();
+	root.style.setProperty("--rows", ctx.grid.rows);
+	root.style.setProperty("--cols", ctx.grid.cols);
 	
 	// creating dom nodes
 	const div  = document.createElement("div");
@@ -316,16 +316,27 @@ function gridInitDOM(root, grid)
 	row.classList.add("row");
 	
 	// cells
-	for (let i=0; i<grid.rows*grid.cols; i++)
+	for (let i=0; i<ctx.grid.rows*ctx.grid.cols; i++)
 	{
 		const node = cell.cloneNode();
-		CELL_POS_NODE_ARRAY[i] = node;
-		NODE_CELL_POS_MAP.set(node, i);
+		ctx.cellPosNodeArray[i] = node;
+		ctx.nodeCellPosMap.set(node, i);
 		root.appendChild(node);
 	}
 
-	root.addEventListener("click", elCellClickHandler.bind(CELL_FILL));
-	root.addEventListener("contextmenu", elCellClickHandler.bind(CELL_MARK));
+	root.addEventListener("click", (e) =>
+	{
+		ctx.action = ACT_RCLICK;
+		gridEventHandlerDOM(ctx, e);
+	});
+
+	root.addEventListener("contextmenu", (e) =>
+	{
+		// prevent context menu from showing
+		e.preventDefault()
+		ctx.action = ACT_LCLICK;
+		gridEventHandlerDOM(ctx, e);
+	});
 }
 
 /** initialize the time node. it shows the elapsed time */
@@ -341,7 +352,7 @@ function timerInitDom(root)
 
 	return setInterval(() =>
 	{
-		let s = '';
+		let s = "";
 		let prev = (Date.now() - start) / 1000 / 60 / 60;
 		for (let i=0; i<3; i++)
 		{
@@ -356,7 +367,7 @@ function timerInitDom(root)
 }
 
 /** init dom nodes for a classic game */
-function classicInitDOM(root, grid, rLabels, cLabels)
+function classicInitDOM(ctx, root)
 {
 	const div   = document.createElement("div"),
 	      input = document.createElement("input");
@@ -364,34 +375,35 @@ function classicInitDOM(root, grid, rLabels, cLabels)
 	const button = input.cloneNode();
 	button.setAttribute("type", "button");
 
-	const container  = div.cloneNode(),
-	      gridNode   = div.cloneNode(),
+	const gridNode   = div.cloneNode(),
 	      timer      = div.cloneNode(),
 	      info       = div.cloneNode(),
 	      infoBottom = div.cloneNode(),
 	      quit       = button.cloneNode();
 
-	container.classList.add("classic-container");
+	root.classList.add("classic-container");
 	quit.classList.add("button");
-	quit.setAttribute("value", "give up");
+	quit.setAttribute("value", "quit");
 
 	// make sure to clear when navigating somewhere else
-	const timerId = timerInitDom(timer);
-	gridWithLabelsInitDOM(gridNode, grid, rLabels, cLabels);
+	ctx.timerId = timerInitDom(timer);
+	gridWithLabelsInitDOM(ctx, gridNode);
 
 	quit.addEventListener("click", () =>
 	{
-		clearInterval(timerId);
+		if (ctx.timerId)
+			clearInterval(ctx.timerId);
 		root.replaceChildren();
-		menuInit(root);
+		menuInit(ctx, root);
 	});
 
-	container.appendChild(gridNode);
+	root.appendChild(gridNode);
 	infoBottom.appendChild(quit);
 	info.appendChild(timer);
 	info.appendChild(infoBottom);
-	container.appendChild(info);
-	root.appendChild(container);
+	root.appendChild(info);
+
+	ctx.gridNode = gridNode;
 }
 
 /** init dom nodes for creating a nonagram */
@@ -405,7 +417,7 @@ function timedInit(root)
 }
 
 /** init dom nodes for the main menu */
-function menuInit(root)
+function menuInit(ctx, root)
 {
 	// base nodes
 	const a      = document.createElement("a"),
@@ -474,39 +486,49 @@ function menuInit(root)
 
 	classicRowInput.setAttribute("placeholder", "row");
 	classicRowInput.setAttribute("required", true);
+	classicRowInput.setAttribute("min", 1);
 	classicRowInput.setAttribute("type", "number");
 	// NOTE: if the user changes this value, remember it
-	classicRowInput.setAttribute("value", 10);
+	classicRowInput.setAttribute("value", DEFAULT_ROWS);
 
 	classicColInput.setAttribute("placeholder", "column");
 	classicColInput.setAttribute("required", true);
+	classicColInput.setAttribute("min", 1);
 	classicColInput.setAttribute("type", "number");
-	classicColInput.setAttribute("value", 10);
+	classicColInput.setAttribute("value", DEFAULT_COLS);
 
 	creatorRowInput.setAttribute("placeholder", "row");
 	creatorRowInput.setAttribute("type", "number");
-	creatorRowInput.setAttribute("value", 10);
+	creatorRowInput.setAttribute("min", 1);
+	creatorRowInput.setAttribute("value", DEFAULT_ROWS);
 	creatorColInput.setAttribute("required", "");
 
 	creatorColInput.setAttribute("placeholder", "column");
 	creatorColInput.setAttribute("type", "number");
-	creatorColInput.setAttribute("value", 10);
+	creatorColInput.setAttribute("min", 1);
+	creatorColInput.setAttribute("value", DEFAULT_COLS);
 
 	// event listeners
 	classicStart.addEventListener("click", () =>
 	{
 		if (classicForm.checkValidity())
 		{
-			const gridRoot = div.cloneNode(),
-			      rows     = classicRowInput.value,
-			      cols     = classicColInput.value;
-			GRID = gridCreate(rows, cols);
+			ctx.mode = MODE_CLASSIC;
+			const node = div.cloneNode(),
+			      rows = +classicRowInput.value,
+			      cols = +classicColInput.value;
+
 			const puzzle = gridCreate(rows, cols);
 			gridRandomize(puzzle);
+			const labels = gridLabels(puzzle);
+
+			ctx.grid = gridCreate(rows, cols);
+			ctx.rLabels = labels[0];
+			ctx.cLabels = labels[1];
+			classicInitDOM(ctx, node);
+			root.replaceChildren(node);
+
 			console.log(gridString(puzzle));
-			const [rLabels, cLabels] = gridLabels(puzzle);
-			classicInitDOM(gridRoot, GRID, rLabels, cLabels);
-			root.replaceChildren(gridRoot);
 		}
 	});
 
@@ -539,19 +561,21 @@ function main()
 {
 	const ctx = {
 		mode: MODE_MAIN_MENU,
-		timerId: null,
+		action: null,
+		grid: null,
 		rLabels: null,
 		cLabels: null,
+		nodeCellPosMap: null,
+		cellPosNodeArray: null,
+		timerId: null,
+		gridNode: null,
 	};
-
-	GRID = gridCreate(10, 10);
 
 	const root = document.getElementById("root");
 	const gridRoot = document.createElement("div");
 
-	menuInit(root);
-	//gridInitDOM(gridRoot, GRID);
-	//root.appendChild(gridRoot);
+	menuInit(ctx, root);
+//root.appendChild(gridRoot);
 }
 
 main();
