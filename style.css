@@ -1,10 +1,19 @@
 body {
   margin: auto;
   width: fit-content;
+  font-family: "Museo Sans Rounded", sans-serif;
 }
 
 #root {
   width: fit-content;
   display: flex;
   gap: 32px;
+}
+
+.classic-container {
+  display: flex;
+}
+
+.timer {
+  font-variant-numeric: tabular-nums;
 }

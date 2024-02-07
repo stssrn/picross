@@ -2,10 +2,12 @@
   --cell-size: 24px;
 }
 
-.grid {
-  font-family: "Museo Sans Rounded", sans-serif;
+.label {
   font-weight: 600;
   font-size: 14px;
+}
+  
+.grid {
   --bc: black;
 }
 
@@ -128,12 +130,13 @@
   text-align: center;
 }
 
-.row-labels {
-  float: left;
-}
+
 .cell-container {
-  float: right;
   font-size: 0;
   max-width: calc(10 * var(--cell-size));
   border: 1px solid var(--bc);
+}
+
+.row-labels-grid-container {
+  display: flex;
 }

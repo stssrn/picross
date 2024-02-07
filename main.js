@@ -57,11 +57,17 @@ const SIZE_AU   = 32,	// size of typed array unit in bits
 /** power of 2 of cells typed array unit */
 const P_AU = 5;
 
-/** cell flags */
+/** cell states */
 const CELL_EMPTY    = 0,
       CELL_MARK     = 1,
       CELL_RESERVED = 2,
       CELL_FILL     = 3;
+
+/** mode states */
+const MODE_MAIN_MENU = 0,
+      MODE_CLASSIC   = 1,
+      MODE_TIMED     = 3,
+      MODE_CREATOR   = 4;
 
 // NOTE: yes the grid is global. no its not a problem because there is only 1
 //       grid at most and it simplifies the code
@@ -242,49 +248,28 @@ const gridWithLabelsOptions = {
 	labels,
 	puzzle,
 }
-function gridWithLabelsInitDOM(root, grid, labels)
-{
-}
 */
 
-// NOTE: labels and grid should be decomposed because the creator
-//       doesn't need labels
-/** init dom nodes for the grid */
-function gridInitDOM(root, grid)
+function gridWithLabelsInitDOM(root, grid, rLabels, cLabels)
 {
-	const puzzle = gridCreate(grid.rows, grid.cols);
-	gridRandomize(puzzle);
-	console.log(gridString(puzzle));
-	
-	const [rLabels, cLabels] = gridLabels(puzzle);
-	
-	CELL_POS_NODE_ARRAY = new Array(grid.cols * grid.rows);
-	NODE_CELL_POS_MAP = new Map();
-	
-	// creating dom nodes
+
 	const div  = document.createElement("div"),
 	      span = document.createElement("span");
-	
-	const info        = div.cloneNode(),
-	      row         = div.cloneNode(),
-	      cell        = div.cloneNode(),
-	      colLabels      = div.cloneNode(),
-	      rowLabels      = div.cloneNode(),
-	      rowLabelsGridDiv      = div.cloneNode(),
-	      gridNode      = div.cloneNode(),
-	      label       = div.cloneNode(),
-	      labelText   = span.cloneNode();
-	
-	root.classList.add("grid");
-	gridNode.classList.add("cell-container");
-	row.classList.add("row");
-	cell.classList.add("cell");
+
+	const gridNode         = div.cloneNode(),
+	      colLabels        = div.cloneNode(),
+	      rowLabels        = div.cloneNode(),
+	      label            = div.cloneNode(),
+	      labelText        = span.cloneNode(),
+	      rowLabelsGridDiv = div.cloneNode();
+
 	colLabels.classList.add("top-row");
-	rowLabels.classList.add("row-labels");
-	rowLabelsGridDiv.classList.add("row-labels-grid-container");
+	gridNode.classList.add("cell-container");
 	label.classList.add("label");
 	labelText.classList.add("label-text");
-	
+	rowLabels.classList.add("row-labels");
+	rowLabelsGridDiv.classList.add("row-labels-grid-container");
+
 	// top row labels
 	for (let i=0; i<cLabels.length; i++)
 	{
@@ -295,7 +280,7 @@ function gridInitDOM(root, grid)
 		colLabels.appendChild(l);
 	}
 	
-	// left labels and cells
+	// left labels
 	for (let i=0; i<rLabels.length; i++)
 	{
 		// label
@@ -305,6 +290,30 @@ function gridInitDOM(root, grid)
 		l.appendChild(lt);
 		rowLabels.appendChild(l);
 	}
+
+	gridInitDOM(gridNode, grid);
+
+	root.appendChild(colLabels);
+	rowLabelsGridDiv.appendChild(rowLabels);
+	rowLabelsGridDiv.appendChild(gridNode);
+	root.appendChild(rowLabelsGridDiv);
+}
+
+/** init dom nodes for the grid */
+function gridInitDOM(root, grid)
+{
+	CELL_POS_NODE_ARRAY = new Array(grid.cols*grid.rows);
+	NODE_CELL_POS_MAP = new Map();
+	
+	// creating dom nodes
+	const div  = document.createElement("div");
+	
+	const row  = div.cloneNode(),
+	      cell = div.cloneNode();
+	
+	cell.classList.add("cell");
+	root.classList.add("grid");
+	row.classList.add("row");
 	
 	// cells
 	for (let i=0; i<grid.rows*grid.cols; i++)
@@ -312,22 +321,77 @@ function gridInitDOM(root, grid)
 		const node = cell.cloneNode();
 		CELL_POS_NODE_ARRAY[i] = node;
 		NODE_CELL_POS_MAP.set(node, i);
-		gridNode.appendChild(node);
+		root.appendChild(node);
 	}
 
-	root.appendChild(colLabels);
-	rowLabelsGridDiv.appendChild(rowLabels);
-	rowLabelsGridDiv.appendChild(gridNode);
-	root.appendChild(rowLabelsGridDiv);
-	
 	root.addEventListener("click", elCellClickHandler.bind(CELL_FILL));
 	root.addEventListener("contextmenu", elCellClickHandler.bind(CELL_MARK));
 }
 
-/** init dom nodes for a classic game */
-function classicInitDOM(root)
+/** initialize the time node. it shows the elapsed time */
+function timerInitDom(root)
 {
+	let start = Date.now();
+	
+	const p = document.createElement("p");
+	p.classList.add("timer");
+	p.textContent = "00:00:00";
 
+	root.appendChild(p);
+
+	return setInterval(() =>
+	{
+		let s = '';
+		let prev = (Date.now() - start) / 1000 / 60 / 60;
+		for (let i=0; i<3; i++)
+		{
+			const x = prev % 60 |0;
+			if (i > 0) s += ':';
+			// add zero padding if needed
+			s += x < 10 ? `0${x}` : x
+			prev *= 60;
+		}
+		p.textContent = s;
+	}, 1000);
+}
+
+/** init dom nodes for a classic game */
+function classicInitDOM(root, grid, rLabels, cLabels)
+{
+	const div   = document.createElement("div"),
+	      input = document.createElement("input");
+
+	const button = input.cloneNode();
+	button.setAttribute("type", "button");
+
+	const container  = div.cloneNode(),
+	      gridNode   = div.cloneNode(),
+	      timer      = div.cloneNode(),
+	      info       = div.cloneNode(),
+	      infoBottom = div.cloneNode(),
+	      quit       = button.cloneNode();
+
+	container.classList.add("classic-container");
+	quit.classList.add("button");
+	quit.setAttribute("value", "give up");
+
+	// make sure to clear when navigating somewhere else
+	const timerId = timerInitDom(timer);
+	gridWithLabelsInitDOM(gridNode, grid, rLabels, cLabels);
+
+	quit.addEventListener("click", () =>
+	{
+		clearInterval(timerId);
+		root.replaceChildren();
+		menuInit(root);
+	});
+
+	container.appendChild(gridNode);
+	infoBottom.appendChild(quit);
+	info.appendChild(timer);
+	info.appendChild(infoBottom);
+	container.appendChild(info);
+	root.appendChild(container);
 }
 
 /** init dom nodes for creating a nonagram */
@@ -429,14 +493,19 @@ function menuInit(root)
 	creatorColInput.setAttribute("value", 10);
 
 	// event listeners
-	classicStart.addEventListener("click", () => {
+	classicStart.addEventListener("click", () =>
+	{
 		if (classicForm.checkValidity())
 		{
 			const gridRoot = div.cloneNode(),
 			      rows     = classicRowInput.value,
 			      cols     = classicColInput.value;
 			GRID = gridCreate(rows, cols);
-			gridInitDOM(gridRoot, GRID);
+			const puzzle = gridCreate(rows, cols);
+			gridRandomize(puzzle);
+			console.log(gridString(puzzle));
+			const [rLabels, cLabels] = gridLabels(puzzle);
+			classicInitDOM(gridRoot, GRID, rLabels, cLabels);
 			root.replaceChildren(gridRoot);
 		}
 	});
@@ -468,6 +537,13 @@ function menuInit(root)
 
 function main()
 {
+	const ctx = {
+		mode: MODE_MAIN_MENU,
+		timerId: null,
+		rLabels: null,
+		cLabels: null,
+	};
+
 	GRID = gridCreate(10, 10);
 
 	const root = document.getElementById("root");
