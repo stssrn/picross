@@ -92,12 +92,6 @@ function gridGet(grid, p)
 	return grid.cells[SIZE_CELL*p>>P_AU] >> SIZE_CELL*p%SIZE_AU & 3;
 }
 
-/** get the state of a cell */
-function gridCellState(grid, p)
-{
-	return grid.cells[SIZE_CELL*p>>P_AU] >> SIZE_CELL*p%SIZE_AU & 3;
-}
-
 // NOTE: should randomize row*cols bits, and mask off rem
 // NOTE(2): the difficulty can't really be adjusted much. one way to do it is
 //          to |= the rand expression again, which gives a probability of .75
@@ -223,26 +217,25 @@ function elCellStateSet(el, state)
 	el.setAttribute("state", state);
 }
 
-/** @this number */
+/** @this CELL_MARK|CELL_FILL */
 function elCellClickHandler(ev)
 {
-	if (!ev.target.classList.contains("cell"))
-		return;
-
-	// prevents the context menu from showing up on right click
-	ev.preventDefault();
-	const n = NODE_CELL_POS_MAP.get(ev.target);
-	const state = gridGet(GRID, n) === this ? CELL_EMPTY : this;
-	gridSet(GRID, state, n);
-	elCellStateSet(ev.target, state)
-	//isCorrectEl.textContent = gridEq(puzzle, GRID) ? "correct" : "incorrect";
-	console.debug(gridString(GRID));
+	if (ev.target.classList.contains("cell"))
+	{
+		// prevent opening the right click context menu
+		ev.preventDefault();
+		const n = NODE_CELL_POS_MAP.get(ev.target);
+		const state = gridGet(GRID, n) === this ? CELL_EMPTY : this;
+		gridSet(GRID, state, n);
+		elCellStateSet(ev.target, state)
+		console.debug(gridString(GRID));
+	}
 }
 
 // NOTE: labels and grid should be decomposed because the creator
 //       doesn't need labels
 /** init dom nodes for the grid */
-function gridInit(root, grid)
+function gridInitDOM(root, grid)
 {
 	const puzzle = gridCreate(grid.rows, grid.cols);
 	gridRandomize(puzzle);
@@ -311,8 +304,9 @@ function gridInit(root, grid)
 }
 
 /** init dom nodes for a classic game */
-function classicInit(root)
+function classicInitDOM(root)
 {
+
 }
 
 /** init dom nodes for creating a nonagram */
@@ -421,8 +415,7 @@ function menuInit(root)
 			      rows     = classicRowInput.value,
 			      cols     = classicColInput.value;
 			GRID = gridCreate(rows, cols);
-			console.debug(GRID);
-			gridInit(gridRoot, GRID);
+			gridInitDOM(gridRoot, GRID);
 			root.replaceChildren(gridRoot);
 		}
 	});
@@ -460,7 +453,7 @@ function main()
 	const gridRoot = document.createElement("div");
 
 	menuInit(root);
-	//gridInit(gridRoot, GRID);
+	//gridInitDOM(gridRoot, GRID);
 	//root.appendChild(gridRoot);
 }
 
