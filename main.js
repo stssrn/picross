@@ -18,8 +18,13 @@ TODO:
 	  scratch
 	  * create a function that takes the current grid context, and transforms
 	    it into the new one
+	  * we'd also have to change the labels, which would require us to store
+	    a reference to the labels in a map. see if that'll actually be worth
+	    implementing (and is actually faster)
 	* turn it into a multi page app. when you click play in the main menu,
 	  you'll be redirected to the /classic.html?params page
+	* button to clear board
+	* separater lines ever 5 cells
 
 -- checking solution
 there are multiple ways to go about this:
@@ -276,7 +281,7 @@ function gridEventHandlerDOM(ctx, ev)
 {
 	if (ev.target.classList.contains("cell"))
 	{
-		ctx.countdownBump = 6_000;
+		//ctx.countdownBump = 6_000;
 		const p = ctx.nodeCellPosMap.get(ev.target);
 		const cellAction = ctx.action === ACT_RCLICK
 			? CELL_FILL
@@ -289,14 +294,37 @@ function gridEventHandlerDOM(ctx, ev)
 		ev.target.setAttribute("state", state);
 		if (gridCheck(ctx.grid, ctx.rLabels, ctx. cLabels))
 		{
-			clearInterval(ctx.intervalId);
 			// NOTE: play some animation
-			if (ctx.mode === MODE_CLASSIC)
+			switch (ctx.mode)
 			{
-				ctx.gridNode.style.pointerEvents = "none";
+				case MODE_CLASSIC:
+					ctx.gridNode.style.pointerEvents = "none";
+					clearInterval(ctx.intervalId);
+					break;
+
+				case MODE_TIMED:
+					ctx.grid = gridCreate(5, 5);
+					gridPuzzleCreateDOM(ctx, 5, 5);
+					const node = document.createElement("div")
+					gridWithLabelsInitDOM(ctx, node);
+					ctx.gridNode.replaceWith(node);
+					ctx.gridNode = node;
+					ctx.level++;
+					ctx.levelNode.textContent++;
+					ctx.countdownBump = 60_000;
 			}
 		}
 	}
+}
+
+/** create a puzzle + store the labels in ctx */
+function gridPuzzleCreateDOM(ctx, rows, cols)
+{
+	const puzzle = gridCreate(rows, cols);
+	gridRandomize(puzzle);
+	const labels = gridLabels(puzzle);
+	ctx.rLabels = labels[0];
+	ctx.cLabels = labels[1];
 }
 
 /** init dom nodes for the grid */
@@ -395,8 +423,9 @@ function classicInitDOM(ctx, root)
 	{
 		if (ctx.intervalId)
 			clearInterval(ctx.intervalId);
-		root.replaceChildren();
-		menuInit(ctx, root);
+		const node = div.cloneNode();
+		menuInit(ctx, node);
+		root.replaceWith(node);
 	});
 
 	root.appendChild(gridNode);
@@ -475,6 +504,7 @@ responsibilities:
 function timedInitDOM(ctx, root)
 {
 	const div   = document.createElement("div"),
+	      p     = document.createElement("p"),
 	      input = document.createElement("input");
 
 	const button = input.cloneNode();
@@ -483,15 +513,18 @@ function timedInitDOM(ctx, root)
 	const grid       = div.cloneNode(),
 	      countdown  = div.cloneNode(),
 	      info       = div.cloneNode(),
+	      level      = div.cloneNode(),
 	      infoBottom = div.cloneNode(),
 	      quit       = button.cloneNode();
 
 	root.classList.add("classic-container");
 	quit.classList.add("button");
 	quit.setAttribute("value", "quit");
+	level.textContent = ctx.level = 0;
+	ctx.levelNode = level;
 
 	// make sure to clear when navigating somewhere else
-	ctx.countdownBump = 6_000;
+	ctx.countdownBump = 120_000;
 	ctx.intervalId = countdownInitDOM(ctx, countdown);
 	gridWithLabelsInitDOM(ctx, grid);
 
@@ -504,6 +537,7 @@ function timedInitDOM(ctx, root)
 	});
 
 	root.appendChild(grid);
+	infoBottom.appendChild(level);
 	infoBottom.appendChild(quit);
 	info.appendChild(countdown);
 	info.appendChild(infoBottom);
@@ -576,6 +610,10 @@ function menuInit(ctx, root)
 	timedStart.textContent    = "Timed Mode";
 
 	// setting attributes
+	// NOTE: this takes like 34ms on my old laptop which seems a little slow.
+	// * see if setting the .attributes prop to  namednodemap is faster.
+	// * maybe move this to html file? then we'd have to .getElement.
+	// * innerhtml
 	classicStart.setAttribute("value", "play");
 	loadStart.setAttribute("value", "play");
 	creatorStart.setAttribute("value", "Create");
@@ -614,17 +652,10 @@ function menuInit(ctx, root)
 			      rows = +classicRowInput.value,
 			      cols = +classicColInput.value;
 
-			const puzzle = gridCreate(rows, cols);
-			gridRandomize(puzzle);
-			const labels = gridLabels(puzzle);
-
 			ctx.grid = gridCreate(rows, cols);
-			ctx.rLabels = labels[0];
-			ctx.cLabels = labels[1];
+			gridPuzzleCreateDOM(ctx, rows, cols);
 			classicInitDOM(ctx, node);
 			root.replaceChildren(node);
-
-			console.log(gridString(puzzle));
 		}
 	});
 
@@ -632,13 +663,8 @@ function menuInit(ctx, root)
 	{
 		ctx.mode = MODE_TIMED;
 		const node = div.cloneNode();
-			const puzzle = gridCreate(5, 5);
-			gridRandomize(puzzle);
-			const labels = gridLabels(puzzle);
-
-			ctx.grid = gridCreate(5, 5);
-			ctx.rLabels = labels[0];
-			ctx.cLabels = labels[1];
+		ctx.grid = gridCreate(5, 5);
+		gridPuzzleCreateDOM(ctx, ctx.grid.rows, ctx.grid.cols);
 		timedInitDOM(ctx, node);
 		root.replaceChildren(node);
 	});
@@ -680,6 +706,7 @@ function main()
 		cellPosNodeArray: null,
 		intervalId: null,
 		gridNode: null,
+		timedLevel: null,
 	};
 
 	const root = document.getElementById("root");
