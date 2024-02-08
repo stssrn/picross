@@ -326,7 +326,7 @@ function gridInitDOM(ctx, root)
 
 	root.addEventListener("click", (e) =>
 	{
-		ctx.action = ACT_RCLICK;
+		ctx.action = e.shiftKey ? ACT_LCLICK : ACT_RCLICK;
 		gridEventHandlerDOM(ctx, e);
 	});
 
