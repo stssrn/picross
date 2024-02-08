@@ -2,6 +2,10 @@
   --cell-size: 24px;
 }
 
+.grid-with-labels {
+  user-select: none;
+}
+
 .label {
   font-weight: 600;
   font-size: 14px;
@@ -70,8 +74,8 @@
   text-align: right;
   letter-spacing: 0.2em;
   min-height: var(--cell-size);
-  user-select: none;
 }
+
 
 .top-row .label:nth-of-type(2n +1) {
   background: linear-gradient(transparent, lightblue 48px);

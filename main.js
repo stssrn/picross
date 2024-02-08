@@ -235,6 +235,7 @@ function gridWithLabelsInitDOM(ctx, root)
 	      labelText        = span.cloneNode(),
 	      rowLabelsGridDiv = div.cloneNode();
 
+	root.classList.add("grid-with-labels");
 	colLabels.classList.add("top-row");
 	gridNode.classList.add("cell-container");
 	label.classList.add("label");
@@ -275,6 +276,7 @@ function gridEventHandlerDOM(ctx, ev)
 {
 	if (ev.target.classList.contains("cell"))
 	{
+		ctx.countdownBump = 6_000;
 		const p = ctx.nodeCellPosMap.get(ev.target);
 		const cellAction = ctx.action === ACT_RCLICK
 			? CELL_FILL
@@ -287,7 +289,7 @@ function gridEventHandlerDOM(ctx, ev)
 		ev.target.setAttribute("state", state);
 		if (gridCheck(ctx.grid, ctx.rLabels, ctx. cLabels))
 		{
-			clearInterval(ctx.timerId);
+			clearInterval(ctx.intervalId);
 			// NOTE: play some animation
 			if (ctx.mode === MODE_CLASSIC)
 			{
@@ -340,7 +342,7 @@ function gridInitDOM(ctx, root)
 }
 
 /** initialize the time node. it shows the elapsed time */
-function timerInitDom(root)
+function timerInitDOM(root)
 {
 	let start = Date.now();
 	
@@ -386,13 +388,13 @@ function classicInitDOM(ctx, root)
 	quit.setAttribute("value", "quit");
 
 	// make sure to clear when navigating somewhere else
-	ctx.timerId = timerInitDom(timer);
+	ctx.intervalId = timerInitDOM(timer);
 	gridWithLabelsInitDOM(ctx, gridNode);
 
 	quit.addEventListener("click", () =>
 	{
-		if (ctx.timerId)
-			clearInterval(ctx.timerId);
+		if (ctx.intervalId)
+			clearInterval(ctx.intervalId);
 		root.replaceChildren();
 		menuInit(ctx, root);
 	});
@@ -411,9 +413,103 @@ function creatorInit(root)
 {
 }
 
-/** init dom nodes for a timed game */
-function timedInit(root)
+function countdownInitDOM(ctx, node)
 {
+	let playtime = ctx.countdownBump;
+	let end = Date.now() + ctx.countdownBump;
+	ctx.countdownBump = null;
+	
+	const p = document.createElement("p");
+	p.classList.add("timer");
+	p.textContent = "00:00:00";
+
+	node.appendChild(p);
+
+	const id = setInterval(() =>
+	{
+		if (ctx.countdownBump)
+		{
+			end += ctx.countdownBump;
+			playtime += ctx.countdownBump;
+			ctx.countdownBump = null;
+		}
+		let prev = (end - Date.now()) / 1000 / 60 / 60;
+		if (prev > 0)
+		{
+			let s = "";
+			for (let i=0; i<3; i++)
+			{
+				const x = prev % 60 |0;
+				if (i > 0) s += ':';
+				// add zero padding if needed
+				s += x < 10 ? `0${x}` : x
+				prev *= 60;
+			}
+			// miliseconds
+			s += `.${prev / 6 % 10 |0}`;
+			p.textContent = s;
+		}
+		else
+		{
+			// player lost, end round
+			console.info("end,", playtime/1000);
+			clearInterval(id);
+			ctx.gridNode.style.pointerEvents = "none";
+		}
+	}, 100);
+	return id;
+}
+
+/*
+handles the state of:
+* timer
+
+function timer
+responsibilities:
+* making sure the grid is updated
+
+responsibilities:
+* making sure the grid is updated
+*/
+/** init dom nodes for a timed game */
+function timedInitDOM(ctx, root)
+{
+	const div   = document.createElement("div"),
+	      input = document.createElement("input");
+
+	const button = input.cloneNode();
+	button.setAttribute("type", "button");
+
+	const grid       = div.cloneNode(),
+	      countdown  = div.cloneNode(),
+	      info       = div.cloneNode(),
+	      infoBottom = div.cloneNode(),
+	      quit       = button.cloneNode();
+
+	root.classList.add("classic-container");
+	quit.classList.add("button");
+	quit.setAttribute("value", "quit");
+
+	// make sure to clear when navigating somewhere else
+	ctx.countdownBump = 6_000;
+	ctx.intervalId = countdownInitDOM(ctx, countdown);
+	gridWithLabelsInitDOM(ctx, grid);
+
+	quit.addEventListener("click", () =>
+	{
+		if (ctx.intervalId)
+			clearInterval(ctx.intervalId);
+		root.replaceChildren();
+		menuInit(ctx, root);
+	});
+
+	root.appendChild(grid);
+	infoBottom.appendChild(quit);
+	info.appendChild(countdown);
+	info.appendChild(infoBottom);
+	root.appendChild(info);
+
+	ctx.gridNode = grid;
 }
 
 /** init dom nodes for the main menu */
@@ -460,7 +556,7 @@ function menuInit(ctx, root)
 	      creatorRowInput = input.cloneNode(),
 	      loadCodeInput   = input.cloneNode();
 
-	classic.classList.add("clasic");
+	classic.classList.add("classic");
 	creator.classList.add("creator");
 	load.classList.add("load");
 	menu.classList.add("menu");
@@ -532,6 +628,21 @@ function menuInit(ctx, root)
 		}
 	});
 
+	timedStart.addEventListener("click", () =>
+	{
+		ctx.mode = MODE_TIMED;
+		const node = div.cloneNode();
+			const puzzle = gridCreate(5, 5);
+			gridRandomize(puzzle);
+			const labels = gridLabels(puzzle);
+
+			ctx.grid = gridCreate(5, 5);
+			ctx.rLabels = labels[0];
+			ctx.cLabels = labels[1];
+		timedInitDOM(ctx, node);
+		root.replaceChildren(node);
+	});
+
 	// putting everything together
 	classic.appendChild(classicHeader);
 	classicForm.appendChild(classicColInput);
@@ -567,7 +678,7 @@ function main()
 		cLabels: null,
 		nodeCellPosMap: null,
 		cellPosNodeArray: null,
-		timerId: null,
+		intervalId: null,
 		gridNode: null,
 	};
 
@@ -575,7 +686,6 @@ function main()
 	const gridRoot = document.createElement("div");
 
 	menuInit(ctx, root);
-//root.appendChild(gridRoot);
 }
 
 main();
