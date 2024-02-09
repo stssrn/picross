@@ -83,6 +83,8 @@ const ACT_RCLICK = 0,
 const DEFAULT_ROWS = 5,
       DEFAULT_COLS = 5;
 
+const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+
 /** create a new grid */
 function gridCreate(rows, cols)
 {
@@ -121,6 +123,7 @@ function gridRandomize(grid)
 			grid.cells[i] += (CELL_FILL << j) * ((rand >>= 1) & 1);
 		}
 	}
+	console.log(grid.cells);
 }
 
 // NOTE: used for debugging
@@ -152,6 +155,84 @@ function gridString(grid)
 		}
 	}
 	return s;
+}
+
+// NOTE: row and col size need to be encoded. max size will be 64
+// SPEC: 0..6    rows
+//       6..12   cols
+//       12..EOF cell data in reverse order
+/** encodes a grid into a code */
+function gridEncode(grid)
+{
+	let z = ""
+	let s = "", c = 0, cnt = 0;
+	s += B64[grid.rows];
+	s += B64[grid.cols];
+	for (let i=0; i<grid.cells.length; i++)
+	{
+		let n = grid.cells[i];
+		n >>=1 ;
+		for (let j=0; j<SIZE_AU/SIZE_CELL; j++)
+		{
+			// note that this is encoded in reverse order
+			c <<= 1;
+			cnt++;
+			const x = n & 1;
+			z+=x;
+			c ^= x;
+			// base 64 encodes 6 bits
+			if (6 === cnt)
+			{
+				console.log("encoding", c, B64[c]);
+				s += B64[c];
+				cnt = c = 0;
+				z+=" ";
+			}
+			const y = n >>= SIZE_CELL
+		}
+	}
+	if (c > 0) s += B64[c];
+	console.log("encoded bits:", z)
+	return s;
+}
+
+function gridDecode(code)
+{
+	const grid = {};
+	grid.rows = B64.indexOf(code[0]);
+	grid.cols = B64.indexOf(code[1]);
+
+	const size = ((code.length - 2) * 6 / SIZE_AU |0) + 1
+	const a = new Uint32Array(size);
+	let cnt = 0;
+	let d = 0;
+	let p = 0;
+	let aIdx = 0;
+	for (let i=0; i<code.length-2;i++)
+	{
+		// 4 bits at at time
+		const b = code[i+2];
+		const e = B64.indexOf(b);
+		for (let j=6; j>0; j--)
+		{
+			if (p < SIZE_AU)
+			{
+				d |= (CELL_FILL * ((e>>j-1)&1));
+				d <<= SIZE_CELL;
+				p += SIZE_CELL;
+			}
+			else
+			{
+				a[aIdx++] = d;
+				d = p = 0;
+				d |= (CELL_FILL * ((e>>j-1)&1));
+				d <<= SIZE_CELL;
+				p += SIZE_CELL;
+			}
+		}
+	}
+	grid.cells = a;
+	return grid;
 }
 
 /** get the labels of the grid (row and col count) */
@@ -253,7 +334,7 @@ function gridWithLabelsInitDOM(ctx, root)
 	{
 		const l = label.cloneNode(),
 		      t = labelText.cloneNode();
-		t.textContent = ctx.cLabels[i].join('\n');
+		t.textContent = ctx.cLabels[i].join('\n') || 0;
 		l.appendChild(t);
 		colLabels.appendChild(l);
 	}
@@ -264,7 +345,7 @@ function gridWithLabelsInitDOM(ctx, root)
 		// label
 		const l  = label.cloneNode(),
 		      lt = labelText.cloneNode();
-		lt.textContent = ctx.rLabels[i].join(' ');
+		lt.textContent = ctx.rLabels[i].join(' ') || 0;
 		l.appendChild(lt);
 		rowLabels.appendChild(l);
 	}
@@ -450,7 +531,7 @@ function countdownInitDOM(ctx, node)
 	
 	const p = document.createElement("p");
 	p.classList.add("timer");
-	p.textContent = "00:00:00";
+	p.textContent = "00:02:00.0";
 
 	node.appendChild(p);
 
@@ -706,11 +787,22 @@ function main()
 		cellPosNodeArray: null,
 		intervalId: null,
 		gridNode: null,
+		level: null,
 		timedLevel: null,
 	};
 
+	const puzzle = gridCreate(5, 5);
+	gridRandomize(puzzle);
+	console.log(puzzle.cells[0].toString(2), puzzle.cells[1].toString(2));
+	console.log("grid:", puzzle);
+	const code = gridEncode(puzzle);
+	console.log("encoded", code);
+	const decoded = gridDecode(code);
+	console.log("decoded", decoded);
+	console.log(decoded.cells[0].toString(2), decoded.cells[1].toString(2));
+	console.log("encoded#2", gridEncode(decoded));
+
 	const root = document.getElementById("root");
-	const gridRoot = document.createElement("div");
 
 	menuInit(ctx, root);
 }
