@@ -193,7 +193,7 @@ function gridEncode(grid)
 				s += B64[c];
 				count = c = 0;
 			}
-			n >>= SIZE_CELL
+			n >>= SIZE_CELL;
 		}
 	}
 	s += B64[c << 6-count];
