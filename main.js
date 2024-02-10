@@ -85,6 +85,18 @@ const DEFAULT_ROWS = 5,
 
 const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 
+function b64Binary(c)
+{
+	if (c === '+') return 62;
+	if (c === '/') return 63;
+
+	const p = c.charCodeAt();
+	// uppercase
+	if (p > 64 && p < 91) return p - 65;
+	// lowercase
+	return p - 71;
+}
+
 /** create a new grid */
 function gridCreate(rows, cols)
 {
@@ -196,8 +208,8 @@ function gridEncode(grid)
 /** decode a grid cod */
 function gridDecode(code)
 {
-	const rows = B64.indexOf(code[0]) + 1;
-	const cols = B64.indexOf(code[1]) + 1;
+	const rows = b64Binary(code[0]) + 1;
+	const cols = b64Binary(code[1]) + 1;
 
 	const size = (code.length - 2) * 6 / SIZE_AU * SIZE_CELL |0;
 	const cells = new Uint32Array(size);
@@ -205,7 +217,7 @@ function gridDecode(code)
 
 	for (let i=0; i<code.length-2;i++)
 	{
-		const e = B64.indexOf(code[i+2]);
+		const e = b64Binary(code[i+2]);
 		for (let j=6; j>0; j--)
 		{
 			if (p >= SIZE_AU)
