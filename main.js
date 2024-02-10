@@ -110,7 +110,7 @@ function gridSet(grid, state, p)
 {
 	// first, clear the bits at p, then set state at p
 	grid.cells[SIZE_CELL*p>>P_AU] &= ~(3 << SIZE_CELL*p%SIZE_AU);
-	grid.cells[SIZE_CELL*p>>P_AU] |= state << SIZE_CELL*p%SIZE_AU;
+	grid.cells[SIZE_CELL*p>>P_AU] ^= state << SIZE_CELL*p%SIZE_AU;
 }
 
 /** get the value of cell p */
@@ -134,7 +134,6 @@ function gridRandomize(grid)
 			grid.cells[i] += (CELL_FILL << j) * ((rand >>= 1) & 1);
 		}
 	}
-	console.log(grid.cells);
 }
 
 // NOTE: used for debugging
@@ -204,8 +203,8 @@ function gridEncode(grid)
 /** decode a grid cod */
 function gridDecode(code)
 {
-	const rows = b64Binary(code[0]) + 1;
-	const cols = b64Binary(code[1]) + 1;
+	const rows = b64Binary(code[0]) + 1,
+	      cols = b64Binary(code[1]) + 1;
 
 	const size = (code.length - 2) * 6 / SIZE_AU * SIZE_CELL |0;
 	const cells = new Uint32Array(size);
@@ -221,7 +220,7 @@ function gridDecode(code)
 				cells[idx++] = d;
 				d = p = 0;
 			}
-			d ^= (CELL_FILL * (e>>j-1&1)) << p;
+			d ^= CELL_FILL * (e >> j-1 & 1) << p;
 			p += SIZE_CELL;
 		}
 	}
