@@ -91,10 +91,9 @@ function b64Binary(c)
 	if (c === '/') return 63;
 
 	const p = c.charCodeAt();
-	// uppercase
-	if (p > 64 && p < 91) return p - 65;
-	// lowercase
-	return p - 71;
+	return p > 64 && p < 91
+		? p - 65	// uppercase
+		: p - 71;	// lowercase
 }
 
 /** create a new grid */
@@ -202,9 +201,6 @@ function gridEncode(grid)
 	return s;
 }
 
-// NOTE: the repeated calls to indexOf are inefficent, maybe create a
-//       function that figues out the index using char points, or an inverse
-//       B64 map?
 /** decode a grid cod */
 function gridDecode(code)
 {
