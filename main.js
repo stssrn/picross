@@ -211,9 +211,9 @@ function gridDecode(code)
 	const cells = new Uint32Array(size);
 	let d = 0, p = 0, idx= 0;
 
-	for (let i=0; i<code.length-2;i++)
+	for (let i=2; i<code.length-2; i++)
 	{
-		const e = b64Binary(code[i+2]);
+		const e = b64Binary(code[i]);
 		for (let j=6; j>0; j--)
 		{
 			if (p >= SIZE_AU)
