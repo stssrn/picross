@@ -157,82 +157,67 @@ function gridString(grid)
 	return s;
 }
 
-// NOTE: row and col size need to be encoded. max size will be 64
-// SPEC: 0..6    rows
-//       6..12   cols
-//       12..EOF cell data in reverse order
+// SPEC: 0..6    row count
+//       6..12   col count
+//       12..EOF cell data, int bits are in reverse order
 /** encodes a grid into a code */
 function gridEncode(grid)
 {
-	let z = ""
-	let s = "", c = 0, cnt = 0;
-	s += B64[grid.rows];
-	s += B64[grid.cols];
+	let s = "", c = 0, count = 0;
+	// row / col count must be in [1..64]
+	s += B64[grid.rows-1];
+	s += B64[grid.cols-1];
+
 	for (let i=0; i<grid.cells.length; i++)
 	{
 		let n = grid.cells[i];
-		n >>=1 ;
 		for (let j=0; j<SIZE_AU/SIZE_CELL; j++)
 		{
 			// note that this is encoded in reverse order
 			c <<= 1;
-			cnt++;
-			const x = n & 1;
-			z+=x;
-			c ^= x;
+			count++;
+			c ^= n & 1;
 			// base 64 encodes 6 bits
-			if (6 === cnt)
+			if (6 === count)
 			{
-				console.log("encoding", c, B64[c]);
 				s += B64[c];
-				cnt = c = 0;
-				z+=" ";
+				count = c = 0;
 			}
-			const y = n >>= SIZE_CELL
+			n >>= SIZE_CELL
 		}
 	}
-	if (c > 0) s += B64[c];
-	console.log("encoded bits:", z)
+	s += B64[c << 6-count];
 	return s;
 }
 
+// NOTE: the repeated calls to indexOf are inefficent, maybe create a
+//       function that figues out the index using char points, or an inverse
+//       B64 map?
+/** decode a grid cod */
 function gridDecode(code)
 {
-	const grid = {};
-	grid.rows = B64.indexOf(code[0]);
-	grid.cols = B64.indexOf(code[1]);
+	const rows = B64.indexOf(code[0]) + 1;
+	const cols = B64.indexOf(code[1]) + 1;
 
-	const size = ((code.length - 2) * 6 / SIZE_AU |0) + 1
-	const a = new Uint32Array(size);
-	let cnt = 0;
-	let d = 0;
-	let p = 0;
-	let aIdx = 0;
+	const size = (code.length - 2) * 6 / SIZE_AU * SIZE_CELL |0;
+	const cells = new Uint32Array(size);
+	let d = 0, p = 0, idx= 0;
+
 	for (let i=0; i<code.length-2;i++)
 	{
-		// 4 bits at at time
-		const b = code[i+2];
-		const e = B64.indexOf(b);
+		const e = B64.indexOf(code[i+2]);
 		for (let j=6; j>0; j--)
 		{
-			if (p < SIZE_AU)
+			if (p >= SIZE_AU)
 			{
-				d |= (CELL_FILL * ((e>>j-1)&1));
-				d <<= SIZE_CELL;
-				p += SIZE_CELL;
-			}
-			else
-			{
-				a[aIdx++] = d;
+				cells[idx++] = d;
 				d = p = 0;
-				d |= (CELL_FILL * ((e>>j-1)&1));
-				d <<= SIZE_CELL;
-				p += SIZE_CELL;
 			}
+			d ^= (CELL_FILL * (e>>j-1&1)) << p;
+			p += SIZE_CELL;
 		}
 	}
-	grid.cells = a;
-	return grid;
+	return { cells, rows, cols };
 }
 
 /** get the labels of the grid (row and col count) */
@@ -790,17 +775,6 @@ function main()
 		level: null,
 		timedLevel: null,
 	};
-
-	const puzzle = gridCreate(5, 5);
-	gridRandomize(puzzle);
-	console.log(puzzle.cells[0].toString(2), puzzle.cells[1].toString(2));
-	console.log("grid:", puzzle);
-	const code = gridEncode(puzzle);
-	console.log("encoded", code);
-	const decoded = gridDecode(code);
-	console.log("decoded", decoded);
-	console.log(decoded.cells[0].toString(2), decoded.cells[1].toString(2));
-	console.log("encoded#2", gridEncode(decoded));
 
 	const root = document.getElementById("root");
 
