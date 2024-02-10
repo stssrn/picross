@@ -173,7 +173,7 @@ function gridString(grid)
 /** encodes a grid into a code */
 function gridEncode(grid)
 {
-	let s = "", c = 0, count = 0;
+	let s = "", bin = 0, pos = 0;
 	// row / col count must be in [1..64]
 	s += B64[grid.rows-1];
 	s += B64[grid.cols-1];
@@ -184,19 +184,19 @@ function gridEncode(grid)
 		for (let j=0; j<SIZE_AU/SIZE_CELL; j++)
 		{
 			// note that this is encoded in reverse order
-			c <<= 1;
-			count++;
-			c ^= n & 1;
+			bin <<= 1;
+			pos++;
+			bin ^= n & 1;
 			// base 64 encodes 6 bits
-			if (6 === count)
+			if (6 === pos)
 			{
-				s += B64[c];
-				count = c = 0;
+				s += B64[bin];
+				pos = bin = 0;
 			}
 			n >>= SIZE_CELL;
 		}
 	}
-	s += B64[c << 6-count];
+	s += B64[bin << 6-pos];
 	return s;
 }
 
@@ -208,20 +208,20 @@ function gridDecode(code)
 
 	const size = (code.length - 2) * 6 / SIZE_AU * SIZE_CELL |0;
 	const cells = new Uint32Array(size);
-	let d = 0, p = 0, idx= 0;
+	let d = 0, pos = 0, idx= 0;
 
 	for (let i=2; i<code.length-2; i++)
 	{
 		const e = b64Binary(code[i]);
 		for (let j=6; j>0; j--)
 		{
-			if (p >= SIZE_AU)
+			if (pos >= SIZE_AU)
 			{
 				cells[idx++] = d;
-				d = p = 0;
+				d = pos = 0;
 			}
-			d ^= CELL_FILL * (e >> j-1 & 1) << p;
-			p += SIZE_CELL;
+			d ^= CELL_FILL * (e >> j-1 & 1) << pos;
+			pos += SIZE_CELL;
 		}
 	}
 	return { cells, rows, cols };
@@ -284,12 +284,12 @@ function gridCheck(g1, rLabels, cLabels)
 	for (let i=0; i<labels1.length; i++)
 	{
 		if (labels1[i].length !== labels2[i].length)
-		   return false
+		   return false;
 		// row labels / col labels
 		for (let j=0; j<labels1[i].length; j++)
 		{
 			if (labels1[i][j].length !== labels2[i][j].length)
-				return false
+				return false;
 			// row count / col count
 			for (let k=0; k<labels1[i][j].length; k++)
 			{
