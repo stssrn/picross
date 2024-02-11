@@ -135,7 +135,7 @@
 }
 
 
-.cell-container {
+.grid {
   font-size: 0;
   max-width: calc(var(--cols) * var(--cell-size));
   border: 1px solid var(--bc);

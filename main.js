@@ -170,7 +170,9 @@ function gridString(grid)
 // SPEC: 0..6    row count
 //       6..12   col count
 //       12..EOF cell data, int bits are in reverse order
-/** encodes a grid into a code */
+// NOTE: there seem to be weird edge cases when using size 10x10.
+//       maybe its a bug in gridLabels
+/** encodes a grid into a string code */
 function gridEncode(grid)
 {
 	let s = "", bin = 0, pos = 0;
@@ -184,8 +186,8 @@ function gridEncode(grid)
 		for (let j=0; j<SIZE_AU/SIZE_CELL; j++)
 		{
 			// note that this is encoded in reverse order
-			bin <<= 1;
 			pos++;
+			bin <<= 1;
 			bin ^= n & 1;
 			// base 64 encodes 6 bits
 			if (6 === pos)
@@ -200,7 +202,7 @@ function gridEncode(grid)
 	return s;
 }
 
-/** decode a grid cod */
+/** decode a grid code */
 function gridDecode(code)
 {
 	const rows = b64Binary(code[0]) + 1,
@@ -210,9 +212,9 @@ function gridDecode(code)
 	const cells = new Uint32Array(size);
 	let d = 0, pos = 0, idx= 0;
 
-	for (let i=2; i<code.length-2; i++)
+	for (let i=0; i<code.length-2; i++)
 	{
-		const e = b64Binary(code[i]);
+		const e = b64Binary(code[i+2]);
 		for (let j=6; j>0; j--)
 		{
 			if (pos >= SIZE_AU)
@@ -301,6 +303,48 @@ function gridCheck(g1, rLabels, cLabels)
 	return true;
 }
 
+/** init dom nodes for the grid */
+function gridInitDOM(ctx, root)
+{
+	ctx.cellPosNodeArray = new Array(ctx.grid.cols*ctx.grid.rows);
+	ctx.nodeCellPosMap = new Map();
+	
+	// creating dom nodes
+	const div  = document.createElement("div");
+	
+	const row  = div.cloneNode(),
+	      cell = div.cloneNode();
+	
+	root.style.setProperty("--rows", ctx.grid.rows);
+	root.style.setProperty("--cols", ctx.grid.cols);
+	root.classList.add("grid");
+	cell.classList.add("cell");
+	row.classList.add("row");
+	
+	// cells
+	for (let i=0; i<ctx.grid.rows*ctx.grid.cols; i++)
+	{
+		const node = cell.cloneNode();
+		ctx.cellPosNodeArray[i] = node;
+		ctx.nodeCellPosMap.set(node, i);
+		root.appendChild(node);
+	}
+
+	root.addEventListener("click", (e) =>
+	{
+		ctx.action = e.shiftKey ? ACT_LCLICK : ACT_RCLICK;
+		gridEventHandlerDOM(ctx, e);
+	});
+
+	root.addEventListener("contextmenu", (e) =>
+	{
+		// prevent context menu from showing
+		e.preventDefault()
+		ctx.action = ACT_LCLICK;
+		gridEventHandlerDOM(ctx, e);
+	});
+}
+
 function gridWithLabelsInitDOM(ctx, root)
 {
 	const div  = document.createElement("div"),
@@ -315,7 +359,6 @@ function gridWithLabelsInitDOM(ctx, root)
 
 	root.classList.add("grid-with-labels");
 	colLabels.classList.add("top-row");
-	gridNode.classList.add("cell-container");
 	label.classList.add("label");
 	labelText.classList.add("label-text");
 	rowLabels.classList.add("row-labels");
@@ -354,7 +397,6 @@ function gridEventHandlerDOM(ctx, ev)
 {
 	if (ev.target.classList.contains("cell"))
 	{
-		//ctx.countdownBump = 6_000;
 		const p = ctx.nodeCellPosMap.get(ev.target);
 		const cellAction = ctx.action === ACT_RCLICK
 			? CELL_FILL
@@ -363,9 +405,18 @@ function gridEventHandlerDOM(ctx, ev)
 			? CELL_EMPTY
 			: cellAction;
 
+		if (ctx.mode === MODE_CREATOR && state == CELL_MARK)
+			return;
 		gridSet(ctx.grid, state, p);
 		ev.target.setAttribute("state", state);
-		if (gridCheck(ctx.grid, ctx.rLabels, ctx. cLabels))
+		if (ctx.mode === MODE_CREATOR)
+		{
+			const encoded = gridEncode(ctx.grid);
+			console.log("CODE:", encoded);
+			return;
+		}
+
+		if (gridCheck(ctx.grid, ctx.rLabels, ctx.cLabels))
 		{
 			// NOTE: play some animation
 			switch (ctx.mode)
@@ -398,48 +449,6 @@ function gridPuzzleCreateDOM(ctx, rows, cols)
 	const labels = gridLabels(puzzle);
 	ctx.rLabels = labels[0];
 	ctx.cLabels = labels[1];
-}
-
-/** init dom nodes for the grid */
-function gridInitDOM(ctx, root)
-{
-	ctx.cellPosNodeArray = new Array(ctx.grid.cols*ctx.grid.rows);
-	ctx.nodeCellPosMap = new Map();
-	root.style.setProperty("--rows", ctx.grid.rows);
-	root.style.setProperty("--cols", ctx.grid.cols);
-	
-	// creating dom nodes
-	const div  = document.createElement("div");
-	
-	const row  = div.cloneNode(),
-	      cell = div.cloneNode();
-	
-	cell.classList.add("cell");
-	root.classList.add("grid");
-	row.classList.add("row");
-	
-	// cells
-	for (let i=0; i<ctx.grid.rows*ctx.grid.cols; i++)
-	{
-		const node = cell.cloneNode();
-		ctx.cellPosNodeArray[i] = node;
-		ctx.nodeCellPosMap.set(node, i);
-		root.appendChild(node);
-	}
-
-	root.addEventListener("click", (e) =>
-	{
-		ctx.action = e.shiftKey ? ACT_LCLICK : ACT_RCLICK;
-		gridEventHandlerDOM(ctx, e);
-	});
-
-	root.addEventListener("contextmenu", (e) =>
-	{
-		// prevent context menu from showing
-		e.preventDefault()
-		ctx.action = ACT_LCLICK;
-		gridEventHandlerDOM(ctx, e);
-	});
 }
 
 /** initialize the time node. it shows the elapsed time */
@@ -511,8 +520,15 @@ function classicInitDOM(ctx, root)
 }
 
 /** init dom nodes for creating a nonagram */
-function creatorInit(root)
+function creatorInitDOM(ctx, root)
 {
+	const div = document.createElement("div");
+
+	const grid = div.cloneNode(),
+	      info = div.cloneNode();
+
+	gridInitDOM(ctx, grid);
+	root.appendChild(grid);
 }
 
 function countdownInitDOM(ctx, node)
@@ -739,6 +755,33 @@ function menuInit(ctx, root)
 		ctx.grid = gridCreate(5, 5);
 		gridPuzzleCreateDOM(ctx, ctx.grid.rows, ctx.grid.cols);
 		timedInitDOM(ctx, node);
+		root.replaceChildren(node);
+	});
+
+	loadStart.addEventListener("click", () =>
+	{
+		ctx.mode = MODE_CLASSIC;
+		const node = div.cloneNode(),
+		      code = loadCodeInput.value;
+
+		const puzzle = gridDecode(code);
+		console.log(puzzle);
+		ctx.grid = gridCreate(puzzle.rows, puzzle.cols);
+		const labels = gridLabels(puzzle);
+		ctx.rLabels = labels[0];
+		ctx.cLabels = labels[1];
+		classicInitDOM(ctx, node);
+		root.replaceChildren(node);
+	});
+
+	creatorStart.addEventListener("click", () =>
+	{
+		ctx.mode = MODE_CREATOR;
+		const node = div.cloneNode(),
+		      rows = +creatorRowInput.value,
+		      cols = +creatorColInput.value;
+		ctx.grid = gridCreate(rows, cols);
+		creatorInitDOM(ctx, node);
 		root.replaceChildren(node);
 	});
 
