@@ -718,6 +718,7 @@ function menuInit(ctx, root)
 	classicRowInput.setAttribute("placeholder", "row");
 	classicRowInput.setAttribute("required", true);
 	classicRowInput.setAttribute("min", 1);
+	classicRowInput.setAttribute("max", 64);
 	classicRowInput.setAttribute("type", "number");
 	// NOTE: if the user changes this value, remember it
 	classicRowInput.setAttribute("value", DEFAULT_ROWS);
@@ -725,35 +726,40 @@ function menuInit(ctx, root)
 	classicColInput.setAttribute("placeholder", "column");
 	classicColInput.setAttribute("required", true);
 	classicColInput.setAttribute("min", 1);
+	classicColInput.setAttribute("max", 64);
 	classicColInput.setAttribute("type", "number");
 	classicColInput.setAttribute("value", DEFAULT_COLS);
+
+	loadCodeInput.setAttribute("required", true);
+	loadCodeInput.setAttribute("minlength", 3);
+	loadCodeInput.setAttribute("pattern", "[\\w\\d\\+\/]*");
 
 	creatorRowInput.setAttribute("placeholder", "row");
 	creatorRowInput.setAttribute("type", "number");
 	creatorRowInput.setAttribute("min", 1);
+	creatorRowInput.setAttribute("max", 64);
 	creatorRowInput.setAttribute("value", DEFAULT_ROWS);
-	creatorColInput.setAttribute("required", "");
+	creatorRowInput.setAttribute("required", true);
 
 	creatorColInput.setAttribute("placeholder", "column");
 	creatorColInput.setAttribute("type", "number");
 	creatorColInput.setAttribute("min", 1);
+	creatorColInput.setAttribute("max", 64);
 	creatorColInput.setAttribute("value", DEFAULT_COLS);
+	creatorColInput.setAttribute("required", true);
 
 	// event listeners
-	classicStart.addEventListener("click", () =>
+	classicForm.addEventListener("submit", () =>
 	{
-		if (classicForm.checkValidity())
-		{
-			ctx.mode = MODE_CLASSIC;
-			const node = div.cloneNode(),
-			      rows = +classicRowInput.value,
-			      cols = +classicColInput.value;
+		ctx.mode = MODE_CLASSIC;
+		const node = div.cloneNode(),
+		      rows = +classicRowInput.value,
+		      cols = +classicColInput.value;
 
-			ctx.grid = gridCreate(rows, cols);
-			gridPuzzleCreateDOM(ctx, rows, cols);
-			classicInitDOM(ctx, node);
-			root.replaceChildren(node);
-		}
+		ctx.grid = gridCreate(rows, cols);
+		gridPuzzleCreateDOM(ctx, rows, cols);
+		classicInitDOM(ctx, node);
+		root.replaceChildren(node);
 	});
 
 	timedStart.addEventListener("click", () =>
@@ -766,7 +772,7 @@ function menuInit(ctx, root)
 		root.replaceChildren(node);
 	});
 
-	loadStart.addEventListener("click", () =>
+	loadForm.addEventListener("submit", () =>
 	{
 		ctx.mode = MODE_CLASSIC;
 		const node = div.cloneNode(),
@@ -782,7 +788,7 @@ function menuInit(ctx, root)
 		root.replaceChildren(node);
 	});
 
-	creatorStart.addEventListener("click", () =>
+	creatorForm.addEventListener("submit", () =>
 	{
 		ctx.mode = MODE_CREATOR;
 		const node = div.cloneNode(),
@@ -795,21 +801,23 @@ function menuInit(ctx, root)
 
 	// putting everything together
 	classic.appendChild(classicHeader);
-	classicForm.appendChild(classicColInput);
 	classicForm.appendChild(classicRowInput);
+	classicForm.appendChild(classicColInput);
 	classicForm.appendChild(classicStart);
 	classic.appendChild(classicForm);
 
 	load.appendChild(loadHeader);
-	load.appendChild(loadCodeInput);
-	load.appendChild(loadStart);
+	loadForm.appendChild(loadCodeInput);
+	loadForm.appendChild(loadStart);
+	load.appendChild(loadForm);
 
 	timed.appendChild(timedStart);
 
 	creator.appendChild(creatorHeader);
-	creator.appendChild(creatorColInput);
-	creator.appendChild(creatorRowInput);
-	creator.appendChild(creatorStart);
+	creatorForm.appendChild(creatorRowInput);
+	creatorForm.appendChild(creatorColInput);
+	creatorForm.appendChild(creatorStart);
+	creator.appendChild(creatorForm);
 
 	menu.appendChild(classic);
 	menu.appendChild(load);
