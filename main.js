@@ -395,49 +395,57 @@ function gridWithLabelsInitDOM(ctx, root)
 
 function gridEventHandlerDOM(ctx, ev)
 {
-	if (ev.target.classList.contains("cell"))
+	if (!ev.target.classList.contains("cell"))
 	{
-		const p = ctx.nodeCellPosMap.get(ev.target);
-		const cellAction = ctx.action === ACT_RCLICK
-			? CELL_FILL
-			: CELL_MARK;
-		const state = gridGet(ctx.grid, p) === cellAction
-			? CELL_EMPTY
-			: cellAction;
+		return;
+	}
 
-		if (ctx.mode === MODE_CREATOR && state == CELL_MARK)
-			return;
-		gridSet(ctx.grid, state, p);
-		ev.target.setAttribute("state", state);
-		if (ctx.mode === MODE_CREATOR)
-		{
-			const encoded = gridEncode(ctx.grid);
-			console.log("CODE:", encoded);
-			return;
-		}
+	const p = ctx.nodeCellPosMap.get(ev.target);
+	const cellAction = ctx.action === ACT_RCLICK
+		? CELL_FILL
+		: CELL_MARK;
+	const state = gridGet(ctx.grid, p) === cellAction
+		? CELL_EMPTY
+		: cellAction;
 
-		if (gridCheck(ctx.grid, ctx.rLabels, ctx.cLabels))
-		{
-			// NOTE: play some animation
-			switch (ctx.mode)
+	switch (ctx.mode)
+	{
+		case MODE_CLASSIC:
+			gridSet(ctx.grid, state, p);
+			ev.target.setAttribute("state", state);
+			if (gridCheck(ctx.grid, ctx.rLabels, ctx.cLabels))
 			{
-				case MODE_CLASSIC:
-					ctx.gridNode.style.pointerEvents = "none";
-					clearInterval(ctx.intervalId);
-					break;
-
-				case MODE_TIMED:
-					ctx.grid = gridCreate(5, 5);
-					gridPuzzleCreateDOM(ctx, 5, 5);
-					const node = document.createElement("div")
-					gridWithLabelsInitDOM(ctx, node);
-					ctx.gridNode.replaceWith(node);
-					ctx.gridNode = node;
-					ctx.level++;
-					ctx.levelNode.textContent++;
-					ctx.countdownBump = 60_000;
+				ctx.gridNode.style.pointerEvents = "none";
+				clearInterval(ctx.intervalId);
 			}
-		}
+			break;
+
+		case MODE_TIMED:
+			gridSet(ctx.grid, state, p);
+			ev.target.setAttribute("state", state);
+			if (gridCheck(ctx.grid, ctx.rLabels, ctx.cLabels))
+			{
+				ctx.grid = gridCreate(5, 5);
+				gridPuzzleCreateDOM(ctx, 5, 5);
+				const node = document.createElement("div")
+				gridWithLabelsInitDOM(ctx, node);
+				ctx.gridNode.replaceWith(node);
+				ctx.gridNode = node;
+				ctx.level++;
+				ctx.levelNode.textContent++;
+				ctx.countdownBump = 60_000;
+			}
+			break;
+
+		case MODE_CREATOR:
+			// marking is disabled in creator mode
+			if (cellAction === CELL_FILL)
+			{
+				gridSet(ctx.grid, state, p);
+				ev.target.setAttribute("state", state);
+				const encoded = gridEncode(ctx.grid);
+			}
+			break;
 	}
 }
 
