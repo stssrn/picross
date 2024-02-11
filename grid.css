@@ -144,3 +144,30 @@
 .row-labels-grid-container {
   display: flex;
 }
+
+/*
+.cell:nth-of-type(5n):not(:nth-of-type(25n)) {
+  border-right-color: orange;
+}
+
+.cell:nth-of-type(5n+1):not(:nth-child(25n+1)) {
+  border-left-color: orange;
+}
+
+.cell:nth-of-type(n+101):not(:nth-of-type(n+126)) {
+  border-bottom-color: orange;
+}
+
+.cell:nth-of-type(n+126):nth-of-type(-n+150) {
+  border-top-color: orange;
+}
+
+.cell:nth-of-type(n+226):not(:nth-of-type(n+251)) {
+  border-bottom-color: orange;
+}
+
+.cell:nth-of-type(n+251):nth-of-type(-n+276) {
+  border-top-color: orange;
+}
+*/
+

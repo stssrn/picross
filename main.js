@@ -1,32 +1,31 @@
-"use strict"
-
 /*
-TODO:
-	* keyboard support
-	* make it look prebby
-	* implement dragging to select multiple cells
-	* Load and share picrosses
-	* Picross Maker
-	* new colors each puzzle.
-	* maybe the difficulty can be estimated by the ratio of filled cells/
-	  total cells. The closer it is to 1, the easier it is.
-	* add hints maybe?
-	* scores need to be saved in the browser.
-	* column and row sizes need to be remembered
-	* add some sort of animation after completion
-	* efficient dom updates in timed mode instead of rebuilding the grid from
-	  scratch
-	  * create a function that takes the current grid context, and transforms
-	    it into the new one
-	  * we'd also have to change the labels, which would require us to store
-	    a reference to the labels in a map. see if that'll actually be worth
-	    implementing (and is actually faster)
-	* turn it into a multi page app. when you click play in the main menu,
-	  you'll be redirected to the /classic.html?params page
-	* button to clear board
-	* separater lines ever 5 cells
+Picross AGPL Source Code
+Copyright (C) 2024 Sergio Tasseron
 
--- checking solution
+-- TODO -----------------------------------------------------------------------
+* keyboard support
+* make it look prebby
+* implement dragging to select multiple cells
+* new colors each puzzle.
+* maybe the difficulty can be estimated by the ratio of filled cells/
+  total cells. The closer it is to 1, the easier it is.
+* add hints maybe?
+* scores need to be saved in the browser.
+* column and row sizes need to be remembered
+* add some sort of animation after completion
+* efficient dom updates in timed mode instead of rebuilding the grid from
+  scratch
+  * create a function that takes the current grid context, and transforms
+    it into the new one
+  * we'd also have to change the labels, which would require us to store
+    a reference to the labels in a map. see if that'll actually be worth
+    implementing (and is actually faster)
+* turn it into a multi page app. when you click play in the main menu,
+  you'll be redirected to the /classic.html?params page
+* button to clear board
+* separater lines ever 5 cells
+
+-- CHECKING SOLUTION A SOLUTION -----------------------------------------------
 there are multiple ways to go about this:
 * check when the "check" button is pressed
   * i dont like this because it costs time when doing this "timed"
@@ -39,17 +38,10 @@ there are multiple ways to go about this:
   else 1. to check if the board is correct, we just have to check if all bits
   are 0. we then check when the fill count are equal.
 
-it's important to keep in mind that a puzzle could have multiple correct solutions.
+!!! keep in mind that a puzzle could have multiple correct solutions. !!!!!!!!!
+*/
 
--- loading/sharing picrosses
-* a grid needs rows*cols amount of bits.
-* needs to contain the amount of cols and rows.
-
-1. player gets the option to load a puzzle
-2. player selects/enters a size.
-3. player chooses a mode: timed, not timed.
-4. player hits play.
-
+"use strict"
 /**
  * @typedef {Object} Grid
  * @property {Uint32Array} cells - cells are 2 bits each
@@ -321,10 +313,20 @@ function gridInitDOM(ctx, root)
 	cell.classList.add("cell");
 	row.classList.add("row");
 	
+/*
+the larger grid needs to be separated in subgrids the size of these
+subrids depend on the total row and column count.
+for multiples of:
+5: subgrid
+*/
 	// cells
 	for (let i=0; i<ctx.grid.rows*ctx.grid.cols; i++)
 	{
 		const node = cell.cloneNode();
+		if (i % 5 === 0 && i % (ctx.grid.cols*5) !== 0)
+		{
+			node.style.borderRightColor = "orange";
+		}
 		ctx.cellPosNodeArray[i] = node;
 		ctx.nodeCellPosMap.set(node, i);
 		root.appendChild(node);
