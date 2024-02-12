@@ -2,14 +2,14 @@
 Picross AGPL Source Code
 Copyright (C) 2024 Sergio Tasseron
 
--- TODO -----------------------------------------------------------------------
+--- TODO ----------------------------------------------------------------------
+* add hints
 * keyboard support
 * make it look prebby
 * implement dragging to select multiple cells
 * new colors each puzzle.
 * maybe the difficulty can be estimated by the ratio of filled cells/
   total cells. The closer it is to 1, the easier it is.
-* add hints maybe?
 * scores need to be saved in the browser.
 * column and row sizes need to be remembered
 * add some sort of animation after completion
@@ -23,25 +23,43 @@ Copyright (C) 2024 Sergio Tasseron
 * turn it into a multi page app. when you click play in the main menu,
   you'll be redirected to the /classic.html?params page
 * button to clear board
-* separater lines ever 5 cells
+* separator grid lines ever n cells
+  * n could be determined by prime factoring the row/col count. n will be
+    whichever factor is closest to 5. the total amount of cells in a subgrid
+    must be greater than 4, otherwise the subgrids are too small.
 
--- CHECKING SOLUTION A SOLUTION -----------------------------------------------
-there are multiple ways to go about this:
-* check when the "check" button is pressed
-  * i dont like this because it costs time when doing this "timed"
-* check the entire grid when the grid changes (inefficient)
-  * could be made efficient by only checking if the amount of filled cells
-    is equal to the amount of filled cells in the solution.
-* incremental check. when you change a cell, you check whether its row and col
-  are correct. the correctness of the entire board can be stored in a bit
-  array, 1 bit for each row (row + col total). if it's correct, the bit is 0,
-  else 1. to check if the board is correct, we just have to check if all bits
-  are 0. we then check when the fill count are equal.
+--- CHECKING THE GRID  --------------------------------------------------------
+a solution is considered correct if cells states align with the labels of the
+solution. a puzzle could however have multiple correct solutions. so a move is
+incorrect if it puts the grid in a state such that no correct solutions are
+possible. figuring out all the correct solutions is however computationally
+challenging.
 
-!!! keep in mind that a puzzle could have multiple correct solutions. !!!!!!!!!
+approach 1: only generate unambiguous puzzles. this however doesn't stop
+people from creating ambiguous puzzles and sharing them with others. in order
+to do this, we must understand what makes a puzzle unambiguos.
+
+   one observation i made is that the more even the ratio of filled to empty
+cells is, the more solutions there are. if this is true, we should not use an
+uniform probability distribution. this would be the easiest solution to genera-
+ting fair puzzles, but would make the puzzles a bit easier on average.
+
+approach 2: if it turns out that it's possible to derive all possible solutions
+can be derived if you have one of them. it'd become trivial to determine the
+solution set.
+
+approach 3: if the player makes a move that differs from the solution, let the
+computer try to solve it from that point using some algorithm. this works if
+there are only few cells left that havent been filled or marked yet, otherwise
+it would take too long. perhaps we can find an accurate heuristic function that
+could be used to determine if the grid is in an unsolvable state.
+
+approach 4: remove the penalty mechanic, which means there is only free mode.
+then we'd only have to check the labels of the player's grid and the solution
+grid. the player wins if the labels are equivalent.
 */
-
 "use strict"
+
 /**
  * @typedef {Object} Grid
  * @property {Uint32Array} cells - cells are 2 bits each
@@ -413,6 +431,9 @@ function gridEventHandlerDOM(ctx, ev)
 	switch (ctx.mode)
 	{
 		case MODE_CLASSIC:
+			if (gridGet(ctx.grid, p) === cellAction)
+			{
+			}
 			gridSet(ctx.grid, state, p);
 			ev.target.setAttribute("state", state);
 			if (gridCheck(ctx.grid, ctx.rLabels, ctx.cLabels))
@@ -836,6 +857,7 @@ function main()
 		grid: null,
 		rLabels: null,
 		cLabels: null,
+		mistakeCount: null,
 		nodeCellPosMap: null,
 		cellPosNodeArray: null,
 		intervalId: null,

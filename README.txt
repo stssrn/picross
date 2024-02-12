@@ -7,14 +7,14 @@ index.html in a modern browser.
 
 this game has been heavily inspired by the game Picross DS.
 
--- FEATURES -----------------------------------------------------------
+--- FEATURES ----------------------------------------------------------
 * exciting game modes
 * puzzles up to 64x64 size
 * sharing puzzles
 * responsive design
 * install as progressive web app
 
--- GAME MODES ---------------------------------------------------------
+--- GAME MODES --------------------------------------------------------
 * normal mode
   * optional 60 minute time limit
   * mistakes will be corrected
@@ -32,7 +32,7 @@ this game has been heavily inspired by the game Picross DS.
   * the player gets to create a puzzle
   * puzzle is can be shared with a generated code
 
--- KNOWN ISSUES ------------------------------------------------------
+--- KNOWN ISSUES -----------------------------------------------------
 * loaded puzzles aren't always 100% accurate
 * cells can be unmarked in normal mode
 * layout breaks when the grid is too big
