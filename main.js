@@ -57,6 +57,32 @@ could be used to determine if the grid is in an unsolvable state.
 approach 4: remove the penalty mechanic, which means there is only free mode.
 then we'd only have to check the labels of the player's grid and the solution
 grid. the player wins if the labels are equivalent.
+
+--- CROSSING OUT LABEL NUMBERS ------------------------------------------------
+numbers of labels are crossed out of the places for these numbers have been 
+placed on the grid. numbers need to be marked if there is a line connected with
+an edge of the grid.
+
+1. user clicks on cell
+2. place the mark/fill
+3. update the labels
+
+in order to update the labels, we need to figure out what the labels are for
+the row and column of the clicked cell, and the the corresponding labels of the
+solution. we have to determine the labels, from the edge of the row/column to
+the last set cell in the row/column. then we compare these values with the
+labels of the solution. then we can figure out what labels need to be changed
+
+to change the label, we need to know the dom node of the label. the easies way
+to achieve this is to group the dom nodes together with the label in an object.
+
+we probably don't want to check the grids of the entire board on every click,
+and only update the we know could be affected.
+
+--- IMPLEMENTATION QUIRKS -----------------------------------------------------
+gridDecode returns a grid with empty labels. it'd make more sense to update
+them as part of the process. i decided not to do this to keep it consistent
+with gridCreate. i should change this
 */
 "use strict"
 
@@ -65,6 +91,19 @@ grid. the player wins if the labels are equivalent.
  * @property {Uint32Array} cells - cells are 2 bits each
  * @property {number} rows
  * @property {number} height
+ * @property {Label[]} labels
+ */
+
+/**
+ * @typedef {Object}  Labels
+ * @propery {Label[]} x
+ * @propery {Label[]} y
+ */
+
+/**
+ * @typedef {Object} Label
+ * @propery {number} count
+ * @propery {Node}   node
  */
 
 const SIZE_AU   = 32,	// size of typed array unit in bits
@@ -112,7 +151,7 @@ function gridCreate(rows, cols)
 	const length = (SIZE_CELL*rows*cols>>P_AU) + 1;
 	const cells = new Uint32Array(length);
 	
-	return { cells, rows, cols };
+	return { cells, rows, cols, labels: { row: [], col: [] } };
 }
 
 /** set the state of cell p */
@@ -181,7 +220,7 @@ function gridString(grid)
 //       6..12   col count
 //       12..EOF cell data, int bits are in reverse order
 // NOTE: there seem to be weird edge cases when using size 10x10.
-//       maybe its a bug in gridLabels
+//       maybe its a bug in gridUpdateLabels
 /** encodes a grid into a string code */
 function gridEncode(grid)
 {
@@ -236,14 +275,14 @@ function gridDecode(code)
 			pos += SIZE_CELL;
 		}
 	}
-	return { cells, rows, cols };
+	return { cells, rows, cols, { x: [], y: [] } };
 }
 
-/** get the labels of the grid (row and col count) */
-function gridLabels(grid)
+/** update the label props of the grid */
+function gridUpdateLabels(grid)
 {
-	const rLabels = new Array(grid.rows),
-	      cLabels = new Array(grid.cols);
+	const rLabels = grid.labels.row,
+	      cLabels = grid.labels.col;
 
 	for (let i=0; i<grid.rows; i++)
 		rLabels[i] = [];
@@ -282,34 +321,40 @@ function gridLabels(grid)
 			prev = state;
 		}
 	}
-
-	return [rLabels, cLabels];
 }
 
 /** a grid is correct if it has the same labels as the solution  */
-function gridCheck(g1, rLabels, cLabels)
+function gridCheck(g1, g2)
 {
-	const labels1 = [rLabels, cLabels],
-	      labels2 = gridLabels(g1);
+	if (g1.labels.row.length !== g2.labels.row.length)
+		return false;
+	if (g1.labels.col.length !== g2.labels.col.length)
+		return false;
 
-	// row/col labels
-	for (let i=0; i<labels1.length; i++)
+	for (let i=0; i<g1.labels.row.length; i++)
 	{
-		if (labels1[i].length !== labels2[i].length)
-		   return false;
-		// row labels / col labels
-		for (let j=0; j<labels1[i].length; j++)
+		if (g1.labels.row[i].length !== g2.labels.row[i].length)
+			return false;
+
+		for (let j=0; j<g1.labels.row[i].length; j++)
 		{
-			if (labels1[i][j].length !== labels2[i][j].length)
+			if (g1.labels.row[i][j] !== g2.labels.row[i][j])
 				return false;
-			// row count / col count
-			for (let k=0; k<labels1[i][j].length; k++)
-			{
-				if (labels1[i][j][k] !== labels2[i][j][k])
-					return false;
-			}
 		}
 	}
+
+	for (let i=0; i<g1.labels.col.length; i++)
+	{
+		if (g1.labels.col[i].length !== g2.labels.col[i].length)
+			return false;
+
+		for (let j=0; j<g1.labels.col[i].length; j++)
+		{
+			if (g1.labels.col[i][j] !== g2.labels.col[i][j])
+				return false;
+		}
+	}
+
 	return true;
 }
 
@@ -384,23 +429,23 @@ function gridWithLabelsInitDOM(ctx, root)
 	rowLabels.classList.add("row-labels");
 	rowLabelsGridDiv.classList.add("row-labels-grid-container");
 
-	// top row labels
-	for (let i=0; i<ctx.cLabels.length; i++)
+	// column labels
+	for (let i=0; i<ctx.puzzle.labels.col.length; i++)
 	{
 		const l = label.cloneNode(),
 		      t = labelText.cloneNode();
-		t.textContent = ctx.cLabels[i].join('\n') || 0;
+		t.textContent = ctx.puzzle.labels.col[i].join('\n') || 0;
 		l.appendChild(t);
 		colLabels.appendChild(l);
 	}
 	
-	// left labels
-	for (let i=0; i<ctx.rLabels.length; i++)
+	// row labels
+	for (let i=0; i<ctx.puzzle.labels.row.length; i++)
 	{
 		// label
 		const l  = label.cloneNode(),
 		      lt = labelText.cloneNode();
-		lt.textContent = ctx.rLabels[i].join(' ') || 0;
+		lt.textContent = ctx.puzzle.labels.row[i].join(' ') || 0;
 		l.appendChild(lt);
 		rowLabels.appendChild(l);
 	}
@@ -431,12 +476,10 @@ function gridEventHandlerDOM(ctx, ev)
 	switch (ctx.mode)
 	{
 		case MODE_CLASSIC:
-			if (gridGet(ctx.grid, p) === cellAction)
-			{
-			}
 			gridSet(ctx.grid, state, p);
 			ev.target.setAttribute("state", state);
-			if (gridCheck(ctx.grid, ctx.rLabels, ctx.cLabels))
+			gridUpdateLabels(ctx.grid);
+			if (gridCheck(ctx.grid, ctx.puzzle))
 			{
 				ctx.gridNode.style.pointerEvents = "none";
 				clearInterval(ctx.intervalId);
@@ -446,7 +489,8 @@ function gridEventHandlerDOM(ctx, ev)
 		case MODE_TIMED:
 			gridSet(ctx.grid, state, p);
 			ev.target.setAttribute("state", state);
-			if (gridCheck(ctx.grid, ctx.rLabels, ctx.cLabels))
+			gridUpdateLabels(ctx.grid);
+			if (gridCheck(ctx.grid, ctx.puzzle))
 			{
 				ctx.grid = gridCreate(5, 5);
 				gridPuzzleCreateDOM(ctx, 5, 5);
@@ -475,11 +519,9 @@ function gridEventHandlerDOM(ctx, ev)
 /** create a puzzle + store the labels in ctx */
 function gridPuzzleCreateDOM(ctx, rows, cols)
 {
-	const puzzle = gridCreate(rows, cols);
-	gridRandomize(puzzle);
-	const labels = gridLabels(puzzle);
-	ctx.rLabels = labels[0];
-	ctx.cLabels = labels[1];
+	ctx.puzzle = gridCreate(rows, cols);
+	gridRandomize(ctx.puzzle);
+	gridUpdateLabels(ctx.puzzle);
 }
 
 /** initialize the time node. it shows the elapsed time */
@@ -802,11 +844,9 @@ function menuInit(ctx, root)
 		      code = loadCodeInput.value;
 
 		const puzzle = gridDecode(code);
+		gridUpdateLabels(puzzle);
 		console.log(puzzle);
 		ctx.grid = gridCreate(puzzle.rows, puzzle.cols);
-		const labels = gridLabels(puzzle);
-		ctx.rLabels = labels[0];
-		ctx.cLabels = labels[1];
 		classicInitDOM(ctx, node);
 		root.replaceChildren(node);
 	});
