@@ -91,20 +91,17 @@ with gridCreate. i should change this
  * @property {Uint32Array} cells - cells are 2 bits each
  * @property {number} rows
  * @property {number} height
- * @property {Label[]} labels
+ * @property {Labels} labels
  */
 
 /**
  * @typedef {Object}  Labels
- * @propery {Label[]} x
- * @propery {Label[]} y
+ * @propery {number[][]} row
+ * @propery {number[][]} col
  */
 
-/**
- * @typedef {Object} Label
- * @propery {number} count
- * @propery {Node}   node
- */
+/** global context */
+let ctx;
 
 const SIZE_AU   = 32,	// size of typed array unit in bits
       SIZE_CELL = 2;	// size of a cell in bits
@@ -275,7 +272,7 @@ function gridDecode(code)
 			pos += SIZE_CELL;
 		}
 	}
-	return { cells, rows, cols, { x: [], y: [] } };
+	return { cells, rows, cols, labels: { x: [], y: [] } };
 }
 
 /** update the label props of the grid */
@@ -428,24 +425,50 @@ function gridWithLabelsInitDOM(ctx, root)
 	labelText.classList.add("label-text");
 	rowLabels.classList.add("row-labels");
 	rowLabelsGridDiv.classList.add("row-labels-grid-container");
+	ctx.labelNodes = { row: [], col: [] };
 
 	// column labels
 	for (let i=0; i<ctx.puzzle.labels.col.length; i++)
 	{
-		const l = label.cloneNode(),
-		      t = labelText.cloneNode();
-		t.textContent = ctx.puzzle.labels.col[i].join('\n') || 0;
-		l.appendChild(t);
-		colLabels.appendChild(l);
+		const l  = label.cloneNode(),
+		      lt = labelText.cloneNode();
+		ctx.labelNodes.col.push([]);
+		if (0 === ctx.puzzle.labels.col[i].length)
+		{
+			lt.appendChild(new Text(0));
+		}
+		else
+		{
+			for (let j=0; j<ctx.puzzle.labels.col[i].length; j++)
+			{
+				const c = new Text(ctx.puzzle.labels.col[i][j]);
+				ctx.labelNodes.col[i][j] = c;
+				lt.appendChild(c)
+			}
+			l.appendChild(lt);
+			colLabels.appendChild(l);
+		}
 	}
 	
 	// row labels
 	for (let i=0; i<ctx.puzzle.labels.row.length; i++)
 	{
-		// label
 		const l  = label.cloneNode(),
 		      lt = labelText.cloneNode();
-		lt.textContent = ctx.puzzle.labels.row[i].join(' ') || 0;
+		ctx.labelNodes.row.push([]);
+		if (0 === ctx.puzzle.labels.row[i].length)
+		{
+			lt.appendChild(new Text(0));
+		}
+		else
+		{
+			for (let j=0; j<ctx.puzzle.labels.row[i].length; j++)
+			{
+				const c = new Text(ctx.puzzle.labels.row[i][j]);
+				ctx.labelNodes.row[i][j] = c;
+				lt.appendChild(c)
+			}
+		}
 		l.appendChild(lt);
 		rowLabels.appendChild(l);
 	}
@@ -891,7 +914,7 @@ function menuInit(ctx, root)
 
 function main()
 {
-	const ctx = {
+	ctx = {
 		mode: MODE_MAIN_MENU,
 		action: null,
 		grid: null,
@@ -902,6 +925,7 @@ function main()
 		cellPosNodeArray: null,
 		intervalId: null,
 		gridNode: null,
+		labelNodes: null,
 		level: null,
 		timedLevel: null,
 	};
