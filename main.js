@@ -435,15 +435,18 @@ function gridWithLabelsInitDOM(ctx, root)
 		ctx.labelNodes.col.push([]);
 		if (0 === ctx.puzzle.labels.col[i].length)
 		{
-			lt.appendChild(new Text(0));
+			const n = span.cloneNode();
+			n.textContent = 0;
+			lt.appendChild(n);
 		}
 		else
 		{
 			for (let j=0; j<ctx.puzzle.labels.col[i].length; j++)
 			{
-				const c = new Text(ctx.puzzle.labels.col[i][j]);
-				ctx.labelNodes.col[i][j] = c;
-				lt.appendChild(c)
+				const n = span.cloneNode();
+				n.textContent = ctx.puzzle.labels.col[i][j];
+				ctx.labelNodes.col[i][j] = n;
+				lt.appendChild(n)
 			}
 			l.appendChild(lt);
 			colLabels.appendChild(l);
@@ -458,15 +461,18 @@ function gridWithLabelsInitDOM(ctx, root)
 		ctx.labelNodes.row.push([]);
 		if (0 === ctx.puzzle.labels.row[i].length)
 		{
-			lt.appendChild(new Text(0));
+			const n = span.cloneNode();
+			n.textContent = 0;
+			lt.appendChild(n);
 		}
 		else
 		{
 			for (let j=0; j<ctx.puzzle.labels.row[i].length; j++)
 			{
-				const c = new Text(ctx.puzzle.labels.row[i][j]);
-				ctx.labelNodes.row[i][j] = c;
-				lt.appendChild(c)
+				const n = span.cloneNode();
+				n.textContent = ctx.puzzle.labels.row[i][j];
+				ctx.labelNodes.row[i][j] = n;
+				lt.appendChild(n)
 			}
 		}
 		l.appendChild(lt);
@@ -502,6 +508,127 @@ function gridEventHandlerDOM(ctx, ev)
 			gridSet(ctx.grid, state, p);
 			ev.target.setAttribute("state", state);
 			gridUpdateLabels(ctx.grid);
+
+			// NOTE: lots of duplicate code, needs refactoring
+			// crossed label logic
+			const col = p % ctx.grid.cols;
+			const row = p / ctx.grid.cols |0;
+
+			// top to bottom
+			const colLabelTop = [];
+			{
+				let prev;
+				// current count of consecutive filled cells
+				let count = 0;
+				for (let i=0; i<ctx.grid.rows; i++)
+				{
+					const c = gridGet(ctx.grid, ctx.grid.rows*i+col);
+					if (c === CELL_EMPTY)
+						break;
+					else if (c === CELL_FILL)
+						count++;
+					else if (c === CELL_MARK && count > 0)
+					{
+						colLabelTop.push(count);
+						count = 0;
+					}
+					prev = c;
+				}
+			}
+
+			// bottom to top
+			const colLabelBottom = [];
+			{
+				let prev;
+				let count = 0;
+				for (let i=ctx.grid.rows-1; i>0; i--)
+				{
+					const c = gridGet(ctx.grid, ctx.grid.rows*i+col);
+					if (c === CELL_EMPTY)
+						break;
+					else if (c === CELL_FILL)
+						count++;
+					else if (c === CELL_MARK && count > 0)
+					{
+						colLabelBottom.push(count);
+						count = 0;
+					}
+					prev = c;
+				}
+			}
+
+			// left to right
+			const rowLabelLeft = [];
+			{
+				let prev;
+				// current count of consecutive filled cells
+				let count = 0;
+				for (let i=0; i<ctx.grid.cols; i++)
+				{
+					const c = gridGet(ctx.grid, ctx.grid.cols*row+i);
+					if (c === CELL_EMPTY)
+						break;
+					else if (c === CELL_FILL)
+						count++;
+					else if (c === CELL_MARK && count > 0)
+					{
+						rowLabelLeft.push(count);
+						count = 0;
+					}
+					prev = c;
+				}
+			}
+
+			// right to left
+			const rowLabelRight = [];
+			{
+				let prev;
+				let count = 0;
+				for (let i=ctx.grid.cols-1; i>0; i--)
+				{
+					const c = gridGet(ctx.grid, ctx.grid.cols*row+i);
+					if (c === CELL_EMPTY)
+						break;
+					else if (c === CELL_FILL)
+						count++;
+					else if (c === CELL_MARK && count > 0)
+					{
+						rowLabelRight.push(count);
+						count = 0;
+					}
+					prev = c;
+				}
+			}
+
+			const colLabel = [];
+			// merging the col label lists
+			for (let i=0; i<ctx.puzzle.labels.col[col].length; i++)
+			{
+				colLabel[i] = colLabelTop[i]
+					?? colLabelBottom[ctx.puzzle.labels.col[col].length-i-1];
+			}
+
+			const rowLabel = [];
+			// merging the row label lists
+			for (let i=0; i<ctx.puzzle.labels.row[row].length; i++)
+			{
+				rowLabel[i] = rowLabelLeft[i]
+					?? rowLabelRight[ctx.puzzle.labels.row[row].length-i-1];
+			}
+
+			// adding crossed class to crossed labels
+			for (let i=0; i<colLabel.length; i++)
+			{
+				if (colLabel[i] === ctx.puzzle.labels.col[col][i])
+					ctx.labelNodes.col[col][i].classList.add("crossed");
+			}
+
+			for (let i=0; i<rowLabel.length; i++)
+			{
+				if (rowLabel[i] === ctx.puzzle.labels.row[row][i])
+					ctx.labelNodes.row[row][i].classList.add("crossed");
+			}
+
 			if (gridCheck(ctx.grid, ctx.puzzle))
 			{
 				ctx.gridNode.style.pointerEvents = "none";
