@@ -544,7 +544,7 @@ function gridEventHandlerDOM(ctx, ev)
 			const colLabelTop = [];
 			{
 				// current count of consecutive filled cells
-				let count = 0;
+				let prev, count = 0;
 				for (let i=0; i<ctx.grid.rows; i++)
 				{
 					const c = gridGet(ctx.grid, ctx.grid.rows*i+col);
@@ -552,11 +552,12 @@ function gridEventHandlerDOM(ctx, ev)
 						break;
 					else if (c === CELL_FILL)
 						count++;
-					else if (c === CELL_MARK && count > 0)
+					else if (c === CELL_MARK && prev === CELL_FILL && count > 0)
 					{
 						colLabelTop.push(count);
 						count = 0;
 					}
+					prev = c;
 				}
 				if (count === ctx.grid.rows)
 					colLabelTop.push(count);
@@ -565,7 +566,7 @@ function gridEventHandlerDOM(ctx, ev)
 			// bottom to top
 			const colLabelBottom = [];
 			{
-				let count = 0;
+				let prev, count = 0;
 				for (let i=ctx.grid.rows-1; i>0; i--)
 				{
 					const c = gridGet(ctx.grid, ctx.grid.rows*i+col);
@@ -573,11 +574,12 @@ function gridEventHandlerDOM(ctx, ev)
 						break;
 					else if (c === CELL_FILL)
 						count++;
-					else if (c === CELL_MARK && count > 0)
+					else if (c === CELL_MARK && prev === CELL_FILL && count > 0)
 					{
 						colLabelBottom.push(count);
 						count = 0;
 					}
+					prev = c;
 				}
 			}
 
@@ -593,11 +595,12 @@ function gridEventHandlerDOM(ctx, ev)
 						break;
 					else if (c === CELL_FILL)
 						count++;
-					else if (c === CELL_MARK && count > 0)
+					else if (c === CELL_MARK && prev === CELL_FILL && count > 0)
 					{
 						rowLabelLeft.push(count);
 						count = 0;
 					}
+					prev = c;
 				}
 				if (count === ctx.grid.cols)
 					rowLabelLeft.push(count);
@@ -614,11 +617,12 @@ function gridEventHandlerDOM(ctx, ev)
 						break;
 					else if (c === CELL_FILL)
 						count++;
-					else if (c === CELL_MARK && count > 0)
+					else if (c === CELL_MARK && prev === CELL_FILL && count > 0)
 					{
 						rowLabelRight.push(count);
 						count = 0;
 					}
+					prev = c;
 				}
 			}
 
@@ -643,12 +647,16 @@ function gridEventHandlerDOM(ctx, ev)
 			{
 				if (colLabel[i] === ctx.puzzle.labels.col[col][i])
 					ctx.labelNodes.col[col][i].classList.add("crossed");
+				else
+					ctx.labelNodes.col[col][i].classList.remove("crossed");
 			}
 
 			for (let i=0; i<rowLabel.length; i++)
 			{
 				if (rowLabel[i] === ctx.puzzle.labels.row[row][i])
 					ctx.labelNodes.row[row][i].classList.add("crossed");
+				else
+					ctx.labelNodes.row[row][i].classList.remove("crossed");
 			}
 
 			if (gridCheck(ctx.grid, ctx.puzzle))
