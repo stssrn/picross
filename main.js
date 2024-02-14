@@ -510,14 +510,13 @@ function gridEventHandlerDOM(ctx, ev)
 			gridUpdateLabels(ctx.grid);
 
 			// NOTE: lots of duplicate code, needs refactoring
-			// crossed label logic
+			// crossout label logic
 			const col = p % ctx.grid.cols;
 			const row = p / ctx.grid.cols |0;
 
 			// top to bottom
 			const colLabelTop = [];
 			{
-				let prev;
 				// current count of consecutive filled cells
 				let count = 0;
 				for (let i=0; i<ctx.grid.rows; i++)
@@ -532,14 +531,12 @@ function gridEventHandlerDOM(ctx, ev)
 						colLabelTop.push(count);
 						count = 0;
 					}
-					prev = c;
 				}
 			}
 
 			// bottom to top
 			const colLabelBottom = [];
 			{
-				let prev;
 				let count = 0;
 				for (let i=ctx.grid.rows-1; i>0; i--)
 				{
@@ -553,14 +550,12 @@ function gridEventHandlerDOM(ctx, ev)
 						colLabelBottom.push(count);
 						count = 0;
 					}
-					prev = c;
 				}
 			}
 
 			// left to right
 			const rowLabelLeft = [];
 			{
-				let prev;
 				// current count of consecutive filled cells
 				let count = 0;
 				for (let i=0; i<ctx.grid.cols; i++)
@@ -575,14 +570,12 @@ function gridEventHandlerDOM(ctx, ev)
 						rowLabelLeft.push(count);
 						count = 0;
 					}
-					prev = c;
 				}
 			}
 
 			// right to left
 			const rowLabelRight = [];
 			{
-				let prev;
 				let count = 0;
 				for (let i=ctx.grid.cols-1; i>0; i--)
 				{
@@ -596,20 +589,19 @@ function gridEventHandlerDOM(ctx, ev)
 						rowLabelRight.push(count);
 						count = 0;
 					}
-					prev = c;
 				}
 			}
 
-			const colLabel = [];
 			// merging the col label lists
+			const colLabel = [];
 			for (let i=0; i<ctx.puzzle.labels.col[col].length; i++)
 			{
 				colLabel[i] = colLabelTop[i]
 					?? colLabelBottom[ctx.puzzle.labels.col[col].length-i-1];
 			}
 
-			const rowLabel = [];
 			// merging the row label lists
+			const rowLabel = [];
 			for (let i=0; i<ctx.puzzle.labels.row[row].length; i++)
 			{
 				rowLabel[i] = rowLabelLeft[i]
