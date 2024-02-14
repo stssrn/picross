@@ -154,7 +154,6 @@ function subgridSize(grid)
 	for (let i=0; i<PRIMES.length; i++)
 	{
 		if (grid.rows % PRIMES[i] === 0) rows = PRIMES[i];
-		if (cols * rows > 20) break;
 		if (grid.cols % PRIMES[i] === 0) cols = PRIMES[i];
 		if (cols * rows > 20) break;
 	}
