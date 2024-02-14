@@ -142,7 +142,7 @@ function b64Binary(c)
 		: p - 71;	// lowercase
 }
 
-const PRIMES = [ 2, 3, 5, 7, 11, 13, 17, 19, 23, 27, 31 ];
+const PRIMES = [ 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31 ];
 
 /**
  * the size of a subgrid are the smallest pair of prime factors of the row
