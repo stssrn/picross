@@ -448,9 +448,9 @@ function gridWithLabelsInitDOM(ctx, root)
 				ctx.labelNodes.col[i][j] = n;
 				lt.appendChild(n)
 			}
-			l.appendChild(lt);
-			colLabels.appendChild(l);
 		}
+		l.appendChild(lt);
+		colLabels.appendChild(l);
 	}
 	
 	// row labels
@@ -532,6 +532,8 @@ function gridEventHandlerDOM(ctx, ev)
 						count = 0;
 					}
 				}
+				if (count === ctx.grid.rows)
+					colLabelTop.push(count);
 			}
 
 			// bottom to top
@@ -571,6 +573,8 @@ function gridEventHandlerDOM(ctx, ev)
 						count = 0;
 					}
 				}
+				if (count === ctx.grid.cols)
+					rowLabelLeft.push(count);
 			}
 
 			// right to left
