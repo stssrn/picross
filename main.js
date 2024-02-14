@@ -142,6 +142,25 @@ function b64Binary(c)
 		: p - 71;	// lowercase
 }
 
+const PRIMES = [ 2, 3, 5, 7, 11, 13, 17, 19, 23, 27, 31 ];
+
+/**
+ * the size of a subgrid are the smallest pair of prime factors of the row
+ * count and col count, such that its product is greater than 20
+ */
+function subgridSize(grid)
+{
+	let cols, rows;
+	for (let i=0; i<PRIMES.length; i++)
+	{
+		if (grid.rows % PRIMES[i] === 0) rows = PRIMES[i];
+		if (cols * rows > 20) break;
+		if (grid.cols % PRIMES[i] === 0) cols = PRIMES[i];
+		if (cols * rows > 20) break;
+	}
+	return [rows ?? grid.rows, cols ?? grid.cols];
+}
+
 /** create a new grid */
 function gridCreate(rows, cols)
 {
@@ -372,20 +391,28 @@ function gridInitDOM(ctx, root)
 	root.classList.add("grid");
 	cell.classList.add("cell");
 	row.classList.add("row");
+	const { rows, cols } = ctx.grid;
+	const [subgridRows, subgridCols] = subgridSize(ctx.grid);
 	
-/*
-the larger grid needs to be separated in subgrids the size of these
-subrids depend on the total row and column count.
-for multiples of:
-5: subgrid
-*/
-	// cells
-	for (let i=0; i<ctx.grid.rows*ctx.grid.cols; i++)
+	const subgridColor = "slateblue"
+	for (let i=0; i<rows*cols; i++)
 	{
 		const node = cell.cloneNode();
-		if (i % 5 === 0 && i % (ctx.grid.cols*5) !== 0)
+		if (i % subgridCols === 0 && i % cols !== 0)
 		{
-			node.style.borderRightColor = "orange";
+			node.style.borderLeftColor = subgridColor;
+		}
+		if ((i+1) % subgridCols === 0 && (i+1) % cols !== 0)
+		{
+			node.style.borderRightColor = subgridColor;
+		}
+		if ((i/cols |0) % subgridRows === 0 && i > cols)
+		{
+			node.style.borderTopColor = subgridColor;
+		}
+		if ((i/cols+1 |0) % subgridRows === 0 && i < rows*(cols-1))
+		{
+			node.style.borderBottomColor = subgridColor;
 		}
 		ctx.cellPosNodeArray[i] = node;
 		ctx.nodeCellPosMap.set(node, i);
