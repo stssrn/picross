@@ -587,7 +587,7 @@ function gridEventHandlerDOM(ctx, ev)
 			const rowLabelLeft = [];
 			{
 				// current count of consecutive filled cells
-				let count = 0;
+				let prev, count = 0;
 				for (let i=0; i<ctx.grid.cols; i++)
 				{
 					const c = gridGet(ctx.grid, ctx.grid.cols*row+i);
@@ -609,7 +609,7 @@ function gridEventHandlerDOM(ctx, ev)
 			// right to left
 			const rowLabelRight = [];
 			{
-				let count = 0;
+				let prev, count = 0;
 				for (let i=ctx.grid.cols-1; i>0; i--)
 				{
 					const c = gridGet(ctx.grid, ctx.grid.cols*row+i);
