@@ -513,6 +513,134 @@ function gridWithLabelsInitDOM(ctx, root)
 	root.appendChild(rowLabelsGridDiv);
 }
 
+/** crossout label logic */
+function gridLabelDOM(ctx, p)
+{
+	const col = p % ctx.grid.cols;
+	const row = p / ctx.grid.cols |0;
+
+	// NOTE: lots of duplicate code, probably needs refactoring
+	// top to bottom
+	const colLabelTop = [];
+	{
+		// current count of consecutive filled cells
+		let prev, count = 0;
+		for (let i=0; i<ctx.grid.rows; i++)
+		{
+			const c = gridGet(ctx.grid, ctx.grid.rows*i+col);
+			if (c === CELL_EMPTY)
+				break;
+			else if (c === CELL_FILL)
+				count++;
+			else if (c === CELL_MARK && prev === CELL_FILL && count > 0)
+			{
+				colLabelTop.push(count);
+				count = 0;
+			}
+			prev = c;
+		}
+		if (count === ctx.grid.rows)
+			colLabelTop.push(count);
+	}
+
+	// bottom to top
+	const colLabelBottom = [];
+	{
+		let prev, count = 0;
+		for (let i=ctx.grid.rows-1; i>0; i--)
+		{
+			const c = gridGet(ctx.grid, ctx.grid.rows*i+col);
+			if (c === CELL_EMPTY)
+				break;
+			else if (c === CELL_FILL)
+				count++;
+			else if (c === CELL_MARK && prev === CELL_FILL && count > 0)
+			{
+				colLabelBottom.push(count);
+				count = 0;
+			}
+			prev = c;
+		}
+	}
+
+	// left to right
+	const rowLabelLeft = [];
+	{
+		// current count of consecutive filled cells
+		let prev, count = 0;
+		for (let i=0; i<ctx.grid.cols; i++)
+		{
+			const c = gridGet(ctx.grid, ctx.grid.cols*row+i);
+			if (c === CELL_EMPTY)
+				break;
+			else if (c === CELL_FILL)
+				count++;
+			else if (c === CELL_MARK && prev === CELL_FILL && count > 0)
+			{
+				rowLabelLeft.push(count);
+				count = 0;
+			}
+			prev = c;
+		}
+		if (count === ctx.grid.cols)
+			rowLabelLeft.push(count);
+	}
+
+	// right to left
+	const rowLabelRight = [];
+	{
+		let prev, count = 0;
+		for (let i=ctx.grid.cols-1; i>0; i--)
+		{
+			const c = gridGet(ctx.grid, ctx.grid.cols*row+i);
+			if (c === CELL_EMPTY)
+				break;
+			else if (c === CELL_FILL)
+				count++;
+			else if (c === CELL_MARK && prev === CELL_FILL && count > 0)
+			{
+				rowLabelRight.push(count);
+				count = 0;
+			}
+			prev = c;
+		}
+	}
+
+	// merging the col label lists
+	const colLabel = [];
+	for (let i=0; i<ctx.puzzle.labels.col[col].length; i++)
+	{
+		colLabel[i] = colLabelTop[i]
+			?? colLabelBottom[ctx.puzzle.labels.col[col].length-i-1];
+	}
+
+	// merging the row label lists
+	const rowLabel = [];
+	for (let i=0; i<ctx.puzzle.labels.row[row].length; i++)
+	{
+		rowLabel[i] = rowLabelLeft[i]
+			?? rowLabelRight[ctx.puzzle.labels.row[row].length-i-1];
+	}
+
+	// adding crossed class to crossed labels
+	for (let i=0; i<colLabel.length; i++)
+	{
+		if (colLabel[i] === ctx.puzzle.labels.col[col][i])
+			ctx.labelNodes.col[col][i].classList.add("crossed");
+		else
+			ctx.labelNodes.col[col][i].classList.remove("crossed");
+	}
+
+	for (let i=0; i<rowLabel.length; i++)
+	{
+		if (rowLabel[i] === ctx.puzzle.labels.row[row][i])
+			ctx.labelNodes.row[row][i].classList.add("crossed");
+		else
+			ctx.labelNodes.row[row][i].classList.remove("crossed");
+	}
+
+}
+
 function gridEventHandlerDOM(ctx, ev)
 {
 	if (!ev.target.classList.contains("cell"))
@@ -534,130 +662,7 @@ function gridEventHandlerDOM(ctx, ev)
 			gridSet(ctx.grid, state, p);
 			ev.target.setAttribute("state", state);
 			gridUpdateLabels(ctx.grid);
-
-			// NOTE: lots of duplicate code, needs refactoring
-			// crossout label logic
-			const col = p % ctx.grid.cols;
-			const row = p / ctx.grid.cols |0;
-
-			// top to bottom
-			const colLabelTop = [];
-			{
-				// current count of consecutive filled cells
-				let prev, count = 0;
-				for (let i=0; i<ctx.grid.rows; i++)
-				{
-					const c = gridGet(ctx.grid, ctx.grid.rows*i+col);
-					if (c === CELL_EMPTY)
-						break;
-					else if (c === CELL_FILL)
-						count++;
-					else if (c === CELL_MARK && prev === CELL_FILL && count > 0)
-					{
-						colLabelTop.push(count);
-						count = 0;
-					}
-					prev = c;
-				}
-				if (count === ctx.grid.rows)
-					colLabelTop.push(count);
-			}
-
-			// bottom to top
-			const colLabelBottom = [];
-			{
-				let prev, count = 0;
-				for (let i=ctx.grid.rows-1; i>0; i--)
-				{
-					const c = gridGet(ctx.grid, ctx.grid.rows*i+col);
-					if (c === CELL_EMPTY)
-						break;
-					else if (c === CELL_FILL)
-						count++;
-					else if (c === CELL_MARK && prev === CELL_FILL && count > 0)
-					{
-						colLabelBottom.push(count);
-						count = 0;
-					}
-					prev = c;
-				}
-			}
-
-			// left to right
-			const rowLabelLeft = [];
-			{
-				// current count of consecutive filled cells
-				let prev, count = 0;
-				for (let i=0; i<ctx.grid.cols; i++)
-				{
-					const c = gridGet(ctx.grid, ctx.grid.cols*row+i);
-					if (c === CELL_EMPTY)
-						break;
-					else if (c === CELL_FILL)
-						count++;
-					else if (c === CELL_MARK && prev === CELL_FILL && count > 0)
-					{
-						rowLabelLeft.push(count);
-						count = 0;
-					}
-					prev = c;
-				}
-				if (count === ctx.grid.cols)
-					rowLabelLeft.push(count);
-			}
-
-			// right to left
-			const rowLabelRight = [];
-			{
-				let prev, count = 0;
-				for (let i=ctx.grid.cols-1; i>0; i--)
-				{
-					const c = gridGet(ctx.grid, ctx.grid.cols*row+i);
-					if (c === CELL_EMPTY)
-						break;
-					else if (c === CELL_FILL)
-						count++;
-					else if (c === CELL_MARK && prev === CELL_FILL && count > 0)
-					{
-						rowLabelRight.push(count);
-						count = 0;
-					}
-					prev = c;
-				}
-			}
-
-			// merging the col label lists
-			const colLabel = [];
-			for (let i=0; i<ctx.puzzle.labels.col[col].length; i++)
-			{
-				colLabel[i] = colLabelTop[i]
-					?? colLabelBottom[ctx.puzzle.labels.col[col].length-i-1];
-			}
-
-			// merging the row label lists
-			const rowLabel = [];
-			for (let i=0; i<ctx.puzzle.labels.row[row].length; i++)
-			{
-				rowLabel[i] = rowLabelLeft[i]
-					?? rowLabelRight[ctx.puzzle.labels.row[row].length-i-1];
-			}
-
-			// adding crossed class to crossed labels
-			for (let i=0; i<colLabel.length; i++)
-			{
-				if (colLabel[i] === ctx.puzzle.labels.col[col][i])
-					ctx.labelNodes.col[col][i].classList.add("crossed");
-				else
-					ctx.labelNodes.col[col][i].classList.remove("crossed");
-			}
-
-			for (let i=0; i<rowLabel.length; i++)
-			{
-				if (rowLabel[i] === ctx.puzzle.labels.row[row][i])
-					ctx.labelNodes.row[row][i].classList.add("crossed");
-				else
-					ctx.labelNodes.row[row][i].classList.remove("crossed");
-			}
+			gridLabelDOM(ctx, p);
 
 			if (gridCheck(ctx.grid, ctx.puzzle))
 			{
@@ -670,6 +675,7 @@ function gridEventHandlerDOM(ctx, ev)
 			gridSet(ctx.grid, state, p);
 			ev.target.setAttribute("state", state);
 			gridUpdateLabels(ctx.grid);
+			gridLabelDOM(ctx, p);
 			if (gridCheck(ctx.grid, ctx.puzzle))
 			{
 				ctx.grid = gridCreate(5, 5);
@@ -691,6 +697,7 @@ function gridEventHandlerDOM(ctx, ev)
 				gridSet(ctx.grid, state, p);
 				ev.target.setAttribute("state", state);
 				const encoded = gridEncode(ctx.grid);
+				console.log("CODE:", encoded);
 			}
 			break;
 	}
@@ -977,7 +984,7 @@ function menuInit(ctx, root)
 
 	loadCodeInput.setAttribute("required", true);
 	loadCodeInput.setAttribute("minlength", 3);
-	loadCodeInput.setAttribute("pattern", "[\\w\\d\\+\/]*");
+	loadCodeInput.setAttribute("pattern", "[\\w\\d\\+\\/]*");
 
 	creatorRowInput.setAttribute("placeholder", "row");
 	creatorRowInput.setAttribute("type", "number");
@@ -1023,10 +1030,11 @@ function menuInit(ctx, root)
 		const node = div.cloneNode(),
 		      code = loadCodeInput.value;
 
-		const puzzle = gridDecode(code);
-		gridUpdateLabels(puzzle);
-		console.log(puzzle);
-		ctx.grid = gridCreate(puzzle.rows, puzzle.cols);
+		ctx.puzzle = gridDecode(code);
+		ctx.puzzle.labels = { row: [], col: [] };
+		gridUpdateLabels(ctx.puzzle);
+		console.log(ctx.puzzle);
+		ctx.grid = gridCreate(ctx.puzzle.rows, ctx.puzzle.cols);
 		classicInitDOM(ctx, node);
 		root.replaceChildren(node);
 	});
