@@ -1,0 +1,28 @@
+.menu {
+  max-width: 600px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.timed {
+  margin-top: 16px;
+}
+
+.timed button {
+  width: 100%;
+  height: 100%
+}
+
+.classic form,
+.creator form,
+.load form {
+  display: flex;
+  flex-direction: column;
+}
+
+@media screen and (max-width: 600px) {
+  .menu {
+    display: block;
+  }
+}

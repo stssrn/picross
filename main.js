@@ -754,6 +754,7 @@ function classicInitDOM(ctx, root)
 	      quit       = button.cloneNode();
 
 	root.classList.add("classic-container");
+	info.classList.add("info");
 	quit.classList.add("button");
 	quit.setAttribute("value", "quit");
 
@@ -867,6 +868,8 @@ function timedInitDOM(ctx, root)
 	      quit       = button.cloneNode();
 
 	root.classList.add("classic-container");
+	level.classList.add("level");
+	info.classList.add("info");
 	quit.classList.add("button");
 	quit.setAttribute("value", "quit");
 	level.textContent = ctx.level = 0;
@@ -967,7 +970,7 @@ function menuInit(ctx, root)
 	loadStart.setAttribute("value", "play");
 	creatorStart.setAttribute("value", "Create");
 
-	classicRowInput.setAttribute("placeholder", "row");
+	classicRowInput.setAttribute("placeholder", "Row count");
 	classicRowInput.setAttribute("required", true);
 	classicRowInput.setAttribute("min", 1);
 	classicRowInput.setAttribute("max", 64);
@@ -975,7 +978,7 @@ function menuInit(ctx, root)
 	// NOTE: if the user changes this value, remember it
 	classicRowInput.setAttribute("value", DEFAULT_ROWS);
 
-	classicColInput.setAttribute("placeholder", "column");
+	classicColInput.setAttribute("placeholder", "Column count");
 	classicColInput.setAttribute("required", true);
 	classicColInput.setAttribute("min", 1);
 	classicColInput.setAttribute("max", 64);
@@ -984,16 +987,17 @@ function menuInit(ctx, root)
 
 	loadCodeInput.setAttribute("required", true);
 	loadCodeInput.setAttribute("minlength", 3);
+	loadCodeInput.setAttribute("placeholder", "Code");
 	loadCodeInput.setAttribute("pattern", "[\\w\\d\\+\\/]*");
 
-	creatorRowInput.setAttribute("placeholder", "row");
+	creatorRowInput.setAttribute("placeholder", "Row count");
 	creatorRowInput.setAttribute("type", "number");
 	creatorRowInput.setAttribute("min", 1);
 	creatorRowInput.setAttribute("max", 64);
 	creatorRowInput.setAttribute("value", DEFAULT_ROWS);
 	creatorRowInput.setAttribute("required", true);
 
-	creatorColInput.setAttribute("placeholder", "column");
+	creatorColInput.setAttribute("placeholder", "Column count");
 	creatorColInput.setAttribute("type", "number");
 	creatorColInput.setAttribute("min", 1);
 	creatorColInput.setAttribute("max", 64);
@@ -1033,7 +1037,6 @@ function menuInit(ctx, root)
 		ctx.puzzle = gridDecode(code);
 		ctx.puzzle.labels = { row: [], col: [] };
 		gridUpdateLabels(ctx.puzzle);
-		console.log(ctx.puzzle);
 		ctx.grid = gridCreate(ctx.puzzle.rows, ctx.puzzle.cols);
 		classicInitDOM(ctx, node);
 		root.replaceChildren(node);
@@ -1094,6 +1097,23 @@ function main()
 		level: null,
 		timedLevel: null,
 	};
+
+	const puzzle = gridCreate(5, 5)
+	gridRandomize(puzzle)
+	gridUpdateLabels(puzzle)
+	const encoded = gridEncode(puzzle);
+	const decoded = gridDecode(encoded);
+	decoded.labels = { col: [], row: [] };
+	gridUpdateLabels(decoded);
+	console.log("ORIGINAL", puzzle);
+	console.log("CODE:", encoded, [...encoded.substring(2)]
+		.flatMap(x => [...B64.indexOf(x).toString(2).padStart(6, 0)]
+			).map((x, i) => i % 16 === 0 ? x+' ' : x).join(''));
+	console.log([...puzzle.cells]
+		.map(x => [...x.toString(2).padStart(SIZE_AU, 0)].filter((_, i) => i & 1).join("")))
+	console.log("DECODED", decoded);
+	console.log([...decoded.cells]
+		.map(x => [...x.toString(2).padStart(SIZE_AU, 0)].filter((_, i) => i & 1).join("")))
 
 	const root = document.getElementById("root");
 

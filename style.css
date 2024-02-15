@@ -1,6 +1,7 @@
 body {
   margin: auto;
   width: fit-content;
+  max-width: calc(100% - 32px);
   font-family: "Museo Sans Rounded", sans-serif;
 }
 
@@ -16,4 +17,17 @@ body {
 
 .timer {
   font-variant-numeric: tabular-nums;
+}
+
+.classic-container {
+  gap: 24px;
+}
+
+.info {
+  margin-top: auto;
+}
+
+.level {
+  margin-bottom: 16px;
+  font-size: larger;
 }
