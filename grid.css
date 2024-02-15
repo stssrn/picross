@@ -2,7 +2,7 @@
   --cell-size: 24px;
 }
 
-.grid-with-labels {
+.grid-with-labels .cell {
   user-select: none;
 }
 
