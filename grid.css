@@ -2,6 +2,18 @@
   --cell-size: 24px;
 }
 
+.grid-with-labels {
+  display: grid;
+  grid-template-columns: repeat(2, fit-content);
+}
+
+.col-labels {
+  grid-column: 2;
+}
+.row-labels {
+  grid-column: 1;
+}
+
 .grid-with-labels .cell {
   user-select: none;
 }
@@ -13,6 +25,8 @@
   
 .grid {
   --bc: black;
+  grid-column: 2 / 2;
+  width: min-content;
 }
 
 /* -- ROW STYLES -- */
@@ -74,7 +88,6 @@
 .label {
   padding-right: 8px;
   padding-left: 4px;
-  width: 96px;
   text-align: right;
   letter-spacing: 0.2em;
   min-height: var(--cell-size);
@@ -84,14 +97,13 @@
   margin-left: 4px;
 }
 
-
-.top-row .label:nth-of-type(2n +1) {
+.col-labels .label:nth-of-type(2n +1) {
   background: linear-gradient(transparent, lightblue 48px);
 /*   background-color: lightblue; */
 }
 
 /* keep the border of the grid in mind */
-.top-row .label:first-child {
+.col-labels .label:first-child {
   max-width: calc(1px + var(--cell-size));
   width: calc(1px + var(--cell-size));
 }
@@ -112,17 +124,17 @@
   display: flex;
   justify-content: end;
   align-items: center;
+  padding-left: 24px;
 }
 
 
-.top-row {
-  margin-left: 108px;
+.col-labels {
   display: flex;
   height: fit-content;
   display: flex;
 }
 
-.top-row .label {
+.col-labels .label {
   padding-top: 24px;
   display: flex;
   align-items: end;
@@ -142,7 +154,6 @@
   text-align: center;
 }
 
-
 .grid {
   font-size: 0;
   /*max-width: calc(var(--cols) * var(--cell-size));*/
@@ -154,4 +165,3 @@
 .row-labels-grid-container {
   display: flex;
 }
-

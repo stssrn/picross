@@ -438,19 +438,17 @@ function gridWithLabelsInitDOM(ctx, root)
 	const div  = document.createElement("div"),
 	      span = document.createElement("span");
 
-	const gridNode         = div.cloneNode(),
-	      colLabels        = div.cloneNode(),
-	      rowLabels        = div.cloneNode(),
-	      label            = div.cloneNode(),
-	      labelText        = span.cloneNode(),
-	      rowLabelsGridDiv = div.cloneNode();
+	const gridNode  = div.cloneNode(),
+	      colLabels = div.cloneNode(),
+	      rowLabels = div.cloneNode(),
+	      label     = div.cloneNode(),
+	      labelText = span.cloneNode();
 
 	root.classList.add("grid-with-labels");
-	colLabels.classList.add("top-row");
+	rowLabels.classList.add("row-labels");
+	colLabels.classList.add("col-labels");
 	label.classList.add("label");
 	labelText.classList.add("label-text");
-	rowLabels.classList.add("row-labels");
-	rowLabelsGridDiv.classList.add("row-labels-grid-container");
 	ctx.labelNodes = { row: [], col: [] };
 
 	// column labels
@@ -508,9 +506,8 @@ function gridWithLabelsInitDOM(ctx, root)
 	gridInitDOM(ctx, gridNode);
 
 	root.appendChild(colLabels);
-	rowLabelsGridDiv.appendChild(rowLabels);
-	rowLabelsGridDiv.appendChild(gridNode);
-	root.appendChild(rowLabelsGridDiv);
+	root.appendChild(rowLabels);
+	root.appendChild(gridNode);
 }
 
 /** crossout label logic */
