@@ -5,6 +5,14 @@ body {
   font-family: "Museo Sans Rounded", sans-serif;
 }
 
+h1 {
+  text-align: center;
+}
+
+h2 {
+  text-transform: uppercase;
+}
+
 #root {
   width: fit-content;
   display: flex;
@@ -30,4 +38,17 @@ body {
 .level {
   margin-bottom: 16px;
   font-size: larger;
+}
+
+.level:before {
+  content: "LEVEL ";
+}
+
+.countdown-label {
+  text-transform: uppercase;
+  font-size: smaller;
+}
+
+.countdown .timer {
+  margin-top: 0;
 }

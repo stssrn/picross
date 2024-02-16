@@ -685,7 +685,8 @@ function gridEventHandlerDOM(ctx, ev)
 				ctx.gridNode.replaceWith(node);
 				ctx.gridNode = node;
 				ctx.level++;
-				ctx.levelNode.textContent++;
+				ctx.levelNode.textContent = ctx.level < 10
+					? '0' + ctx.level : ctx.level;
 				ctx.countdownBump = 60_000;
 			}
 			break;
@@ -862,6 +863,7 @@ function timedInitDOM(ctx, root)
 
 	const grid       = div.cloneNode(),
 	      countdown  = div.cloneNode(),
+	      cdLabel    = div.cloneNode(),
 	      info       = div.cloneNode(),
 	      level      = div.cloneNode(),
 	      infoBottom = div.cloneNode(),
@@ -871,8 +873,12 @@ function timedInitDOM(ctx, root)
 	level.classList.add("level");
 	info.classList.add("info");
 	quit.classList.add("button");
+	countdown.classList.add("countdown");
+	cdLabel.classList.add("countdown-label");
 	quit.setAttribute("value", "quit");
-	level.textContent = ctx.level = 0;
+	cdLabel.textContent = "Time Left";
+	level.textContent = "01";
+	ctx.level = 1;
 	ctx.levelNode = level;
 
 	// make sure to clear when navigating somewhere else
@@ -891,6 +897,7 @@ function timedInitDOM(ctx, root)
 	root.appendChild(grid);
 	infoBottom.appendChild(level);
 	infoBottom.appendChild(quit);
+	countdown.prepend(cdLabel);
 	info.appendChild(countdown);
 	info.appendChild(infoBottom);
 	root.appendChild(info);
