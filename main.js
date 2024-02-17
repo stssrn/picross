@@ -521,12 +521,17 @@ function gridLabelDOM(ctx, p)
 	const colLabelTop = [];
 	{
 		// current count of consecutive filled cells
-		let prev, count = 0;
+		let prev, hasEmpty = false, count = 0;
 		for (let i=0; i<ctx.grid.rows; i++)
 		{
 			const c = gridGet(ctx.grid, ctx.grid.rows*i+col);
 			if (c === CELL_EMPTY)
+			{
+				// required in case the label is rows-1 and a  mark can't be
+				// placed on both ends
+				hasEmpty = true;
 				break;
+			}
 			else if (c === CELL_FILL)
 				count++;
 			else if (c === CELL_MARK && prev === CELL_FILL && count > 0)
@@ -536,7 +541,7 @@ function gridLabelDOM(ctx, p)
 			}
 			prev = c;
 		}
-		if (count === ctx.grid.rows)
+		if (!hasEmpty)
 			colLabelTop.push(count);
 	}
 
@@ -564,12 +569,15 @@ function gridLabelDOM(ctx, p)
 	const rowLabelLeft = [];
 	{
 		// current count of consecutive filled cells
-		let prev, count = 0;
+		let prev, hasEmpty = false, count = 0;
 		for (let i=0; i<ctx.grid.cols; i++)
 		{
 			const c = gridGet(ctx.grid, ctx.grid.cols*row+i);
 			if (c === CELL_EMPTY)
+			{
+				hasEmpty = true;
 				break;
+			}
 			else if (c === CELL_FILL)
 				count++;
 			else if (c === CELL_MARK && prev === CELL_FILL && count > 0)
@@ -579,7 +587,7 @@ function gridLabelDOM(ctx, p)
 			}
 			prev = c;
 		}
-		if (count === ctx.grid.cols)
+		if (!hasEmpty)
 			rowLabelLeft.push(count);
 	}
 
@@ -887,8 +895,9 @@ function timedInitDOM(ctx, root)
 	{
 		if (ctx.intervalId)
 			clearInterval(ctx.intervalId);
-		root.replaceChildren();
-		menuInit(ctx, root);
+		const node = div.cloneNode();
+		menuInit(ctx, node);
+		root.replaceWith(node);
 	});
 
 	root.appendChild(grid);
@@ -924,7 +933,6 @@ function menuInit(ctx, root)
 	      classic = div.cloneNode(),
 	      creator = div.cloneNode(),
 	      load    = div.cloneNode(),
-	      menu    = div.cloneNode(),
 	      timed   = div.cloneNode(),
 
 	      classicForm = form.cloneNode(),
@@ -949,7 +957,7 @@ function menuInit(ctx, root)
 	classic.classList.add("classic");
 	creator.classList.add("creator");
 	load.classList.add("load");
-	menu.classList.add("menu");
+	root.classList.add("menu");
 	timed.classList.add("timed");
 	title.classList.add("title");
 
@@ -1019,7 +1027,7 @@ function menuInit(ctx, root)
 		ctx.grid = gridCreate(rows, cols);
 		gridPuzzleCreateDOM(ctx, rows, cols);
 		classicInitDOM(ctx, node);
-		root.replaceChildren(node);
+		root.replaceWith(node);
 	});
 
 	timedStart.addEventListener("click", () =>
@@ -1029,7 +1037,7 @@ function menuInit(ctx, root)
 		ctx.grid = gridCreate(5, 5);
 		gridPuzzleCreateDOM(ctx, ctx.grid.rows, ctx.grid.cols);
 		timedInitDOM(ctx, node);
-		root.replaceChildren(node);
+		root.replaceWith(node);
 	});
 
 	loadForm.addEventListener("submit", () =>
@@ -1043,7 +1051,7 @@ function menuInit(ctx, root)
 		gridUpdateLabels(ctx.puzzle);
 		ctx.grid = gridCreate(ctx.puzzle.rows, ctx.puzzle.cols);
 		classicInitDOM(ctx, node);
-		root.replaceChildren(node);
+		root.replaceWith(node);
 	});
 
 	creatorForm.addEventListener("submit", () =>
@@ -1054,7 +1062,7 @@ function menuInit(ctx, root)
 		      cols = +creatorColInput.value;
 		ctx.grid = gridCreate(rows, cols);
 		creatorInitDOM(ctx, node);
-		root.replaceChildren(node);
+		root.replaceWith(node);
 	});
 
 	// putting everything together
@@ -1077,11 +1085,10 @@ function menuInit(ctx, root)
 	creatorForm.appendChild(creatorStart);
 	creator.appendChild(creatorForm);
 
-	menu.appendChild(classic);
-	menu.appendChild(load);
-	menu.appendChild(timed);
-	menu.appendChild(creator);
-	root.appendChild(menu);
+	root.appendChild(classic);
+	root.appendChild(load);
+	root.appendChild(timed);
+	root.appendChild(creator);
 }
 
 function main()
@@ -1120,8 +1127,10 @@ function main()
 		.map(x => [...x.toString(2).padStart(SIZE_AU, 0)].filter((_, i) => i & 1).join("")))
 
 	const root = document.getElementById("root");
+	const node = document.createElement("div");
 
-	menuInit(ctx, root);
+	menuInit(ctx, node);
+	root.appendChild(node);
 }
 
 main();
