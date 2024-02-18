@@ -27,6 +27,7 @@
   --bc: black;
   grid-column: 2 / 2;
   width: min-content;
+  height: min-content;
 }
 
 /* -- ROW STYLES -- */
@@ -98,11 +99,6 @@
   margin-left: 4px;
 }
 
-.col-labels .label:nth-of-type(2n +1) {
-  background: linear-gradient(transparent, lightblue 48px);
-/*   background-color: lightblue; */
-}
-
 /* keep the border of the grid in mind */
 .col-labels .label:first-child {
   max-width: calc(1px + var(--cell-size));
@@ -113,8 +109,13 @@
   height: calc(1px + var(--cell-size));
 }
 
+.col-labels .label:nth-of-type(2n + 1) {
+  background: linear-gradient(transparent, var(--color) 48px);
+/*   background-color: lightblue; */
+}
+
 .row-labels .label:nth-child(2n + 1) {
-  background: linear-gradient(to right, transparent, lightblue 48px);
+  background: linear-gradient(to right, transparent, var(--color) 48px);
 }
 
 .row:last-of-type .label {

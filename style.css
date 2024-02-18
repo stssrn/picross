@@ -4,7 +4,7 @@
 
 body {
   margin: auto;
-  width: fit-content;
+  width: 100%;
   max-width: calc(100% - 32px);
   font-family: "Museo Sans Rounded", sans-serif;
 }
@@ -14,11 +14,12 @@ html {
   height: 100vh;
 }
 
-.menu {
+.menu, .container {
   background: linear-gradient(white, #f1effc 64px, #e4e0f6 90%);
   padding: 32px;
   border: 2px solid black;
   box-shadow: 4px 4px #333;
+  margin: 64px 0;
 }
   
 h1 {
@@ -31,30 +32,33 @@ h2 {
 }
 
 #root {
-  width: fit-content;
   display: flex;
   gap: 32px;
 }
 
-.classic-container {
+.container {
   display: flex;
-}
-
-.timer {
-  font-variant-numeric: tabular-nums;
-}
-
-.classic-container {
   gap: 24px;
+}
+
+.timer, .countdown {
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+  margin-top: 0;
 }
 
 .info {
   margin-top: auto;
+  min-height: calc(var(--cell-size) * var(--rows));
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .level {
   margin-bottom: 16px;
   font-size: larger;
+  font-weight: 600;
 }
 
 .level:before {
@@ -63,31 +67,33 @@ h2 {
 
 .countdown-label {
   text-transform: uppercase;
-  font-size: smaller;
-}
-
-.countdown .timer {
-  margin-top: 0;
+  font-size: 12px;
+  letter-spacing: 0.075em;
+  font-weight: 600;
 }
 
 .classic {
   --color: #c1cfff;
   --color-dark: #a2b4f2;
+  --color-grid: #5e70ad;
 }
 
 .timed {
   --color: #ffa7b0;
   --color-dark: #e67782;
+  --color-grid: #b33c48;
 }
 
 .load {
   --color: #b0ffa7;
   --color-dark: #91e987;
+  --color-grid: #4aa740;
 }
 
 .creator {
   --color: #ffdaa7;
   --color-dark: #ecc083;
+  --color-grid: #ba853c;
 }
 
 input[type="submit"], input[type="button"], button {
@@ -99,10 +105,37 @@ input[type="submit"], input[type="button"], button {
   box-shadow: 2px 2px #333;
   text-transform: uppercase;
   letter-spacing: 0.075em;
+  color: black;
+  border-radius: 0;
 }
 
-input {
+input, .code {
   border: 2px solid black;
   box-shadow: 2px 2px #333;
   margin: 2px 0;
+  padding: 4px 8px;
+  background-color: #FFF;
 }
+
+.code {
+  height: 21px;
+  width: 10em;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.code-wrapper {
+  position: relative;
+}
+
+.clipboard {
+  position: absolute;
+  top: 10px;
+  right: 6px;
+  width: 16px;
+}
+
+input {
+  min-height: 24px;
+}
+

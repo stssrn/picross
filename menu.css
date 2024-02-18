@@ -1,8 +1,12 @@
+.menu, .container {
+  gap: 16px;
+  box-sizing: border-box;
+  margin: 64px auto;
+}
+
 .menu {
-  max-width: 600px;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
 }
 
 .timed {
@@ -11,7 +15,7 @@
 
 .timed button {
   width: 100%;
-  height: 100%
+  height: 100%;
 }
 
 .classic form,
@@ -21,8 +25,9 @@
   flex-direction: column;
 }
 
-@media screen and (max-width: 600px) {
+@media screen and (max-width: 450px) {
   .menu {
     display: block;
+    width: 100%;
   }
 }

@@ -385,15 +385,13 @@ function gridInitDOM(ctx, root)
 	const row  = div.cloneNode(),
 	      cell = div.cloneNode();
 	
-	root.style.setProperty("--rows", ctx.grid.rows);
-	root.style.setProperty("--cols", ctx.grid.cols);
 	root.classList.add("grid");
 	cell.classList.add("cell");
 	row.classList.add("row");
 	const { rows, cols } = ctx.grid;
 	const [subgridRows, subgridCols] = subgridSize(ctx.grid);
 	
-	const subgridColor = "slateblue"
+	const subgridColor = "var(--color-grid)"
 	for (let i=0; i<rows*cols; i++)
 	{
 		const node = cell.cloneNode();
@@ -759,10 +757,14 @@ function classicInitDOM(ctx, root)
 	      infoBottom = div.cloneNode(),
 	      quit       = button.cloneNode();
 
-	root.classList.add("classic-container");
+	root.classList.add("container");
 	info.classList.add("info");
+	timer.classList.add("info-top");
+	infoBottom.classList.add("info-bottom");
 	quit.classList.add("button");
 	quit.setAttribute("value", "quit");
+	root.style.setProperty("--rows", ctx.grid.rows);
+	root.style.setProperty("--cols", ctx.grid.cols);
 
 	// make sure to clear when navigating somewhere else
 	ctx.intervalId = timerInitDOM(timer);
@@ -790,12 +792,51 @@ function classicInitDOM(ctx, root)
 function creatorInitDOM(ctx, root)
 {
 	const div = document.createElement("div");
+	const input = document.createElement("input");
+	const label = document.createElement("label");
+	const img = document.createElement("img");
 
-	const grid = div.cloneNode(),
-	      info = div.cloneNode();
+	const button = input.cloneNode();
+	button.setAttribute("type", "button");
 
+	const grid        = div.cloneNode(),
+	      info        = div.cloneNode(),
+	      codeWrapper = div.cloneNode(),
+	      container   = div.cloneNode(),
+	      clipboard   = img.cloneNode(),
+	      code        = div.cloneNode(),
+	      generate    = button.cloneNode();
+
+	label.textContent = "Code";
+	code.classList.add("code");
+	root.classList.add("container");
+	codeWrapper.classList.add("code-wrapper");
+	clipboard.classList.add("clipboard");
+	clipboard.setAttribute("src", "clipboard.svg");
+	info.classList.add("info");
+	generate.setAttribute("value", "Generate");
+	code.setAttribute("disabled", true);
+	root.style.setProperty("--rows", ctx.grid.rows);
+	root.style.setProperty("--cols", ctx.grid.cols);
 	gridInitDOM(ctx, grid);
+	info.appendChild(label);
+	codeWrapper.appendChild(code);
+	codeWrapper.appendChild(clipboard);
+	info.appendChild(codeWrapper);
+	info.appendChild(generate);
 	root.appendChild(grid);
+	root.appendChild(info);
+
+	clipboard.addEventListener("click", () =>
+	{
+		navigator.clipboard.writeText(code.textContent);
+		clipboard.setAttribute("src", "check.svg");
+	});
+
+	generate.addEventListener("click", () =>
+	{
+		code.textContent = gridEncode(ctx.grid);
+	});
 }
 
 function countdownInitDOM(ctx, node)
@@ -874,12 +915,14 @@ function timedInitDOM(ctx, root)
 	      infoBottom = div.cloneNode(),
 	      quit       = button.cloneNode();
 
-	root.classList.add("classic-container");
+	root.classList.add("container");
 	level.classList.add("level");
 	info.classList.add("info");
 	quit.classList.add("button");
 	countdown.classList.add("countdown");
 	cdLabel.classList.add("countdown-label");
+	root.style.setProperty("--rows", ctx.grid.rows);
+	root.style.setProperty("--cols", ctx.grid.cols);
 	quit.setAttribute("value", "quit");
 	cdLabel.textContent = "Time Left";
 	level.textContent = "01";
@@ -1026,6 +1069,7 @@ function menuInit(ctx, root)
 
 		ctx.grid = gridCreate(rows, cols);
 		gridPuzzleCreateDOM(ctx, rows, cols);
+		node.classList.add("classic");
 		classicInitDOM(ctx, node);
 		root.replaceWith(node);
 	});
@@ -1036,6 +1080,7 @@ function menuInit(ctx, root)
 		const node = div.cloneNode();
 		ctx.grid = gridCreate(5, 5);
 		gridPuzzleCreateDOM(ctx, ctx.grid.rows, ctx.grid.cols);
+		node.classList.add("timed");
 		timedInitDOM(ctx, node);
 		root.replaceWith(node);
 	});
@@ -1050,6 +1095,7 @@ function menuInit(ctx, root)
 		ctx.puzzle.labels = { row: [], col: [] };
 		gridUpdateLabels(ctx.puzzle);
 		ctx.grid = gridCreate(ctx.puzzle.rows, ctx.puzzle.cols);
+		node.classList.add("load");
 		classicInitDOM(ctx, node);
 		root.replaceWith(node);
 	});
@@ -1061,6 +1107,7 @@ function menuInit(ctx, root)
 		      rows = +creatorRowInput.value,
 		      cols = +creatorColInput.value;
 		ctx.grid = gridCreate(rows, cols);
+		node.classList.add("creator");
 		creatorInitDOM(ctx, node);
 		root.replaceWith(node);
 	});
