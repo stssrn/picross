@@ -978,8 +978,8 @@ function menuInit(ctx, root)
 	// * see if setting the .attributes prop to  namednodemap is faster.
 	// * maybe move this to html file? then we'd have to .getElement.
 	// * innerhtml
-	classicStart.setAttribute("value", "play");
-	loadStart.setAttribute("value", "play");
+	classicStart.setAttribute("value", "Play");
+	loadStart.setAttribute("value", "Play");
 	creatorStart.setAttribute("value", "Create");
 
 	classicRowInput.setAttribute("placeholder", "Row count");

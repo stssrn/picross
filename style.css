@@ -1,3 +1,7 @@
+:root {
+  --color: white;
+}
+
 body {
   margin: auto;
   width: fit-content;
@@ -5,12 +9,25 @@ body {
   font-family: "Museo Sans Rounded", sans-serif;
 }
 
+html {
+  background: linear-gradient(to top left, white, #e1a7ff);
+  height: 100vh;
+}
+
+.menu {
+  background: linear-gradient(white, #f1effc 64px, #e4e0f6 90%);
+  padding: 32px;
+  border: 2px solid black;
+  box-shadow: 4px 4px #333;
+}
+  
 h1 {
   text-align: center;
 }
 
 h2 {
   text-transform: uppercase;
+  font-size: 16px;
 }
 
 #root {
@@ -51,4 +68,41 @@ h2 {
 
 .countdown .timer {
   margin-top: 0;
+}
+
+.classic {
+  --color: #c1cfff;
+  --color-dark: #a2b4f2;
+}
+
+.timed {
+  --color: #ffa7b0;
+  --color-dark: #e67782;
+}
+
+.load {
+  --color: #b0ffa7;
+  --color-dark: #91e987;
+}
+
+.creator {
+  --color: #ffdaa7;
+  --color-dark: #ecc083;
+}
+
+input[type="submit"], input[type="button"], button {
+  appearance: none;
+  border: 2px solid black;
+  background: linear-gradient(to bottom, white, var(--color) 16px, var(--color-dark) 96%);
+  font-weight: 700;
+  padding:6px 12px;
+  box-shadow: 2px 2px #333;
+  text-transform: uppercase;
+  letter-spacing: 0.075em;
+}
+
+input {
+  border: 2px solid black;
+  box-shadow: 2px 2px #333;
+  margin: 2px 0;
 }
