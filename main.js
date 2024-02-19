@@ -142,19 +142,21 @@ function b64Binary(c)
 		: p - 71;	// lowercase
 }
 
-const PRIMES = [ 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31 ];
+// mostly primes except 4, 2 is excluded because we don't want subgrids that
+// are too small
+const FACTORS = [ 3, 4, 5, 7, 11, 13, 17, 19, 23, 29, 31 ];
 
 /**
- * the size of a subgrid are the smallest pair of prime factors of the row
+ * the size of a subgrid are the smallest pair of factors of the row
  * count and col count, such that its product is greater than 20
  */
 function subgridSize(grid)
 {
 	let cols, rows;
-	for (let i=0; i<PRIMES.length; i++)
+	for (let i=0; i<FACTORS.length; i++)
 	{
-		if (grid.rows % PRIMES[i] === 0) rows = PRIMES[i];
-		if (grid.cols % PRIMES[i] === 0) cols = PRIMES[i];
+		if (grid.rows % FACTORS[i] === 0) rows = FACTORS[i];
+		if (grid.cols % FACTORS[i] === 0) cols = FACTORS[i];
 		if (cols * rows > 20) break;
 	}
 	return [rows ?? grid.rows, cols ?? grid.cols];
