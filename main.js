@@ -700,8 +700,6 @@ function gridEventHandlerDOM(ctx, ev)
 			{
 				gridSet(ctx.grid, state, p);
 				ev.target.setAttribute("state", state);
-				const encoded = gridEncode(ctx.grid);
-				console.log("CODE:", encoded);
 			}
 			break;
 	}
