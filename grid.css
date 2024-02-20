@@ -1,5 +1,5 @@
 :root {
-  --cell-size: 24px;
+  --cell-size: 28px;
 }
 
 .grid-with-labels {
@@ -38,15 +38,15 @@
 /* -- CELL STYLES -- */
 .cell {
   display: inline-block;
-  height: 24px;
-  width: 24px;
+  height: var(--cell-size);
+  width: var(--cell-size);
   border: 1px solid var(--bc);
   box-sizing: border-box;
   background-color: white;
 }
 
 .cell:hover {
-  border: 2px solid lightslategray !important;
+  border: 2px solid #ff4c6f !important;
 }
 
 /*
@@ -166,4 +166,60 @@
 
 .row-labels-grid-container {
   display: flex;
+}
+
+@media screen and (max-width: 450px) {
+  .container {
+    overflow: scroll;
+  }
+  
+  .grid {
+    margin-left: -2px;
+    margin-top: -2px;
+  }
+  
+  .cover {
+    position: sticky;
+    left: 0;
+    top: 0;
+    z-index: 2;
+  }
+  
+  .cover:after {
+    content: "";
+    display: block;
+    width: 2px;
+    height: 2px;
+    background-color: black;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+  }
+  
+  .row-labels {
+    position: sticky;
+    left: 0;
+    background-color: #f1effc;
+    border-right: 2px solid black;
+    padding-left: 2px;
+    margin-top: -2px;
+  }
+  
+  .row-labels .label {
+    padding-left: 0;
+  }
+  
+  .col-labels .label:nth-child(2n), .cover {
+    background: linear-gradient(white, #f1effc 64px, #e4e0f6 90%);
+  }
+  
+  .col-labels {
+    margin-left: -2px;
+    position: sticky;
+    width: min-content;
+    border-bottom: 2px solid black;
+    background-color: #f1effc;
+    top: 0;
+    z-index: 1;
+  }
 }

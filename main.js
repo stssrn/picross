@@ -439,12 +439,14 @@ function gridWithLabelsInitDOM(ctx, root)
 	      span = document.createElement("span");
 
 	const gridNode  = div.cloneNode(),
+	      cover     = div.cloneNode(),
 	      colLabels = div.cloneNode(),
 	      rowLabels = div.cloneNode(),
 	      label     = div.cloneNode(),
 	      labelText = span.cloneNode();
 
 	root.classList.add("grid-with-labels");
+	cover.classList.add("cover");
 	rowLabels.classList.add("row-labels");
 	colLabels.classList.add("col-labels");
 	label.classList.add("label");
@@ -505,6 +507,7 @@ function gridWithLabelsInitDOM(ctx, root)
 
 	gridInitDOM(ctx, gridNode);
 
+	root.appendChild(cover);
 	root.appendChild(colLabels);
 	root.appendChild(rowLabels);
 	root.appendChild(gridNode);

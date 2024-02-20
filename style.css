@@ -11,7 +11,7 @@ body {
 
 html {
   background: linear-gradient(to top left, white, #e1a7ff);
-  height: 100vh;
+  min-height: 100vh;
 }
 
 .menu, .container {
@@ -137,5 +137,38 @@ input, .code {
 
 input {
   min-height: 24px;
+}
+
+@media screen and (max-width: 450px) {
+  body {
+    max-width: 100%;
+  }
+  
+  .grid-with-labels {
+    max-height: calc(100vh - 100px);
+    overflow: scroll;
+  }
+  
+  .container {
+    margin: 0 !important;
+    display: block;
+    border: none;
+    height: 100vh;
+    min-width: 100%;
+    padding: 0;
+  }
+  
+  .info {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    min-height: 100px;
+    max-height: 100px;
+    padding: 24px;
+    box-sizing: border-box;
+    flex-direction: row;
+    background: linear-gradient(to top, #c87cef, #e1a7ff);
+    border-top: 2px solid #333;
+  }
 }
 
