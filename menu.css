@@ -18,7 +18,7 @@
   height: 100%;
 }
 
-.classic form,
+.normal form,
 .creator form,
 .load form {
   display: flex;

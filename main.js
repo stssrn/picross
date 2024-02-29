@@ -5,9 +5,8 @@ Copyright (C) 2024 Sergio Tasseron
 --- TODO ----------------------------------------------------------------------
 * add hints
 * keyboard support
-* make it look prebby
 * implement dragging to select multiple cells
-* new colors each puzzle.
+* new colors each puzzle in timed mode.
 * maybe the difficulty can be estimated by the ratio of filled cells/
   total cells. The closer it is to 1, the easier it is.
 * scores need to be saved in the browser.
@@ -19,70 +18,10 @@ Copyright (C) 2024 Sergio Tasseron
     it into the new one
   * we'd also have to change the labels, which would require us to store
     a reference to the labels in a map. see if that'll actually be worth
-    implementing (and is actually faster)
+    implementing (and if it's actually faster)
 * turn it into a multi page app. when you click play in the main menu,
-  you'll be redirected to the /classic.html?params page
+  you'll be redirected to the /normal.html?params page
 * button to clear board
-* separator grid lines ever n cells
-  * n could be determined by prime factoring the row/col count. n will be
-    whichever factor is closest to 5. the total amount of cells in a subgrid
-    must be greater than 4, otherwise the subgrids are too small.
-
---- CHECKING THE GRID  --------------------------------------------------------
-a solution is considered correct if cells states align with the labels of the
-solution. a puzzle could however have multiple correct solutions. so a move is
-incorrect if it puts the grid in a state such that no correct solutions are
-possible. figuring out all the correct solutions is however computationally
-challenging.
-
-approach 1: only generate unambiguous puzzles. this however doesn't stop
-people from creating ambiguous puzzles and sharing them with others. in order
-to do this, we must understand what makes a puzzle unambiguos.
-
-   one observation i made is that the more even the ratio of filled to empty
-cells is, the more solutions there are. if this is true, we should not use an
-uniform probability distribution. this would be the easiest solution to genera-
-ting fair puzzles, but would make the puzzles a bit easier on average.
-
-approach 2: if it turns out that it's possible to derive all possible solutions
-can be derived if you have one of them. it'd become trivial to determine the
-solution set.
-
-approach 3: if the player makes a move that differs from the solution, let the
-computer try to solve it from that point using some algorithm. this works if
-there are only few cells left that havent been filled or marked yet, otherwise
-it would take too long. perhaps we can find an accurate heuristic function that
-could be used to determine if the grid is in an unsolvable state.
-
-approach 4: remove the penalty mechanic, which means there is only free mode.
-then we'd only have to check the labels of the player's grid and the solution
-grid. the player wins if the labels are equivalent.
-
---- CROSSING OUT LABEL NUMBERS ------------------------------------------------
-numbers of labels are crossed out of the places for these numbers have been 
-placed on the grid. numbers need to be marked if there is a line connected with
-an edge of the grid.
-
-1. user clicks on cell
-2. place the mark/fill
-3. update the labels
-
-in order to update the labels, we need to figure out what the labels are for
-the row and column of the clicked cell, and the the corresponding labels of the
-solution. we have to determine the labels, from the edge of the row/column to
-the last set cell in the row/column. then we compare these values with the
-labels of the solution. then we can figure out what labels need to be changed
-
-to change the label, we need to know the dom node of the label. the easies way
-to achieve this is to group the dom nodes together with the label in an object.
-
-we probably don't want to check the grids of the entire board on every click,
-and only update the we know could be affected.
-
---- IMPLEMENTATION QUIRKS -----------------------------------------------------
-gridDecode returns a grid with empty labels. it'd make more sense to update
-them as part of the process. i decided not to do this to keep it consistent
-with gridCreate. i should change this
 */
 "use strict"
 
@@ -188,7 +127,8 @@ function gridGet(grid, p)
 // NOTE: should randomize row*cols bits, and mask off rem
 // NOTE(2): the difficulty can't really be adjusted much. one way to do it is
 //          to |= the rand expression again, which gives a probability of .75
-//          for a cell to be filled instead of .5
+//          for a cell to be filled instead of .5. Math.random should just be
+//          ran for each cell so we have more control.
 /** fill a grid with random marks */
 function gridRandomize(grid)
 {
@@ -200,37 +140,6 @@ function gridRandomize(grid)
 			grid.cells[i] += (CELL_FILL << j) * ((rand >>= 1) & 1);
 		}
 	}
-}
-
-// NOTE: used for debugging
-/** string representation of a grid */
-function gridString(grid)
-{
-	let s = "";
-	for (let i=0; i<SIZE_CELL*grid.cols*grid.rows; i+=SIZE_CELL)
-	{
-		if (0 === i % (SIZE_CELL*grid.cols))
-		{
-			s+= "\n";
-		}
-	
-		const state = grid.cells[i>>P_AU] >> i%SIZE_AU & 3;
-		switch (state)
-		{
-			case CELL_EMPTY:
-				s += "0";
-				break;
-			case CELL_FILL:
-				s += "1";
-				break;
-			case CELL_MARK:
-				s += "X";
-				break;
-			case CELL_RESERVED:
-				s += "O";
-		}
-	}
-	return s;
 }
 
 // SPEC: 0..6    row count
@@ -268,6 +177,11 @@ function gridEncode(grid)
 	return s;
 }
 
+/*
+gridDecode returns a grid with empty labels. it'd make more sense to update
+them as part of the process. i decided not to do this to keep it consistent
+with gridCreate. i should change this
+*/
 /** decode a grid code */
 function gridDecode(code)
 {
@@ -738,15 +652,15 @@ function timerInitDOM(root)
 			const x = prev % 60 |0;
 			if (i > 0) s += ':';
 			// add zero padding if needed
-			s += x < 10 ? `0${x}` : x
+			s += x < 10 ? `0${x}` : x;
 			prev *= 60;
 		}
 		p.textContent = s;
 	}, 1000);
 }
 
-/** init dom nodes for a classic game */
-function classicInitDOM(ctx, root)
+/** init dom nodes for a normal game */
+function normalInitDOM(ctx, root)
 {
 	const div   = document.createElement("div"),
 	      input = document.createElement("input");
@@ -871,7 +785,7 @@ function countdownInitDOM(ctx, node)
 				const x = prev % 60 |0;
 				if (i > 0) s += ':';
 				// add zero padding if needed
-				s += x < 10 ? `0${x}` : x
+				s += x < 10 ? `0${x}` : x;
 				prev *= 60;
 			}
 			// miliseconds
@@ -889,17 +803,6 @@ function countdownInitDOM(ctx, node)
 	return id;
 }
 
-/*
-handles the state of:
-* timer
-
-function timer
-responsibilities:
-* making sure the grid is updated
-
-responsibilities:
-* making sure the grid is updated
-*/
 /** init dom nodes for a timed game */
 function timedInitDOM(ctx, root)
 {
@@ -976,31 +879,31 @@ function menuInit(ctx, root)
 	// composing nodes
 	const title   = h1.cloneNode(),
 
-	      classic = div.cloneNode(),
+	      normal = div.cloneNode(),
 	      creator = div.cloneNode(),
 	      load    = div.cloneNode(),
 	      timed   = div.cloneNode(),
 
-	      classicForm = form.cloneNode(),
+	      normalForm = form.cloneNode(),
 	      creatorForm = form.cloneNode(),
 	      loadForm    = form.cloneNode(),
 
-	      classicStart = start.cloneNode(),
+	      normalStart = start.cloneNode(),
 	      creatorStart = start.cloneNode(),
 	      loadStart    = start.cloneNode(),
 	      timedStart   = button.cloneNode(),
 
-	      classicHeader = h2.cloneNode(),
+	      normalHeader = h2.cloneNode(),
 	      creatorHeader = h2.cloneNode(),
 	      loadHeader    = h2.cloneNode(),
 
-	      classicColInput = input.cloneNode(),
-	      classicRowInput = input.cloneNode(),
+	      normalColInput = input.cloneNode(),
+	      normalRowInput = input.cloneNode(),
 	      creatorColInput = input.cloneNode(),
 	      creatorRowInput = input.cloneNode(),
 	      loadCodeInput   = input.cloneNode();
 
-	classic.classList.add("classic");
+	normal.classList.add("normal");
 	creator.classList.add("creator");
 	load.classList.add("load");
 	root.classList.add("menu");
@@ -1008,13 +911,13 @@ function menuInit(ctx, root)
 	title.classList.add("title");
 
 	const headerClass = "section-header";
-	classicHeader.classList.add(headerClass);
+	normalHeader.classList.add(headerClass);
 	creatorHeader.classList.add(headerClass);
 	loadHeader.classList.add(headerClass);
 
 	// setting text
 	title.textContent         = "Picross";
-	classicHeader.textContent = "New";
+	normalHeader.textContent = "New";
 	loadHeader.textContent    = "Load";
 	creatorHeader.textContent = "Create";
 	timedStart.textContent    = "Timed Mode";
@@ -1024,24 +927,24 @@ function menuInit(ctx, root)
 	// * see if setting the .attributes prop to  namednodemap is faster.
 	// * maybe move this to html file? then we'd have to .getElement.
 	// * innerhtml
-	classicStart.setAttribute("value", "Play");
+	normalStart.setAttribute("value", "Play");
 	loadStart.setAttribute("value", "Play");
 	creatorStart.setAttribute("value", "Create");
 
-	classicRowInput.setAttribute("placeholder", "Row count");
-	classicRowInput.setAttribute("required", true);
-	classicRowInput.setAttribute("min", 1);
-	classicRowInput.setAttribute("max", 64);
-	classicRowInput.setAttribute("type", "number");
+	normalRowInput.setAttribute("placeholder", "Row count");
+	normalRowInput.setAttribute("required", true);
+	normalRowInput.setAttribute("min", 1);
+	normalRowInput.setAttribute("max", 64);
+	normalRowInput.setAttribute("type", "number");
 	// NOTE: if the user changes this value, remember it
-	classicRowInput.setAttribute("value", DEFAULT_ROWS);
+	normalRowInput.setAttribute("value", DEFAULT_ROWS);
 
-	classicColInput.setAttribute("placeholder", "Column count");
-	classicColInput.setAttribute("required", true);
-	classicColInput.setAttribute("min", 1);
-	classicColInput.setAttribute("max", 64);
-	classicColInput.setAttribute("type", "number");
-	classicColInput.setAttribute("value", DEFAULT_COLS);
+	normalColInput.setAttribute("placeholder", "Column count");
+	normalColInput.setAttribute("required", true);
+	normalColInput.setAttribute("min", 1);
+	normalColInput.setAttribute("max", 64);
+	normalColInput.setAttribute("type", "number");
+	normalColInput.setAttribute("value", DEFAULT_COLS);
 
 	loadCodeInput.setAttribute("required", true);
 	loadCodeInput.setAttribute("minlength", 3);
@@ -1063,17 +966,17 @@ function menuInit(ctx, root)
 	creatorColInput.setAttribute("required", true);
 
 	// event listeners
-	classicForm.addEventListener("submit", () =>
+	normalForm.addEventListener("submit", () =>
 	{
 		ctx.mode = MODE_CLASSIC;
 		const node = div.cloneNode(),
-		      rows = +classicRowInput.value,
-		      cols = +classicColInput.value;
+		      rows = +normalRowInput.value,
+		      cols = +normalColInput.value;
 
 		ctx.grid = gridCreate(rows, cols);
 		gridPuzzleCreateDOM(ctx, rows, cols);
-		node.classList.add("classic");
-		classicInitDOM(ctx, node);
+		node.classList.add("normal");
+		normalInitDOM(ctx, node);
 		root.replaceWith(node);
 	});
 
@@ -1099,7 +1002,7 @@ function menuInit(ctx, root)
 		gridUpdateLabels(ctx.puzzle);
 		ctx.grid = gridCreate(ctx.puzzle.rows, ctx.puzzle.cols);
 		node.classList.add("load");
-		classicInitDOM(ctx, node);
+		normalInitDOM(ctx, node);
 		root.replaceWith(node);
 	});
 
@@ -1116,11 +1019,11 @@ function menuInit(ctx, root)
 	});
 
 	// putting everything together
-	classic.appendChild(classicHeader);
-	classicForm.appendChild(classicRowInput);
-	classicForm.appendChild(classicColInput);
-	classicForm.appendChild(classicStart);
-	classic.appendChild(classicForm);
+	normal.appendChild(normalHeader);
+	normalForm.appendChild(normalRowInput);
+	normalForm.appendChild(normalColInput);
+	normalForm.appendChild(normalStart);
+	normal.appendChild(normalForm);
 
 	load.appendChild(loadHeader);
 	loadForm.appendChild(loadCodeInput);
@@ -1135,7 +1038,7 @@ function menuInit(ctx, root)
 	creatorForm.appendChild(creatorStart);
 	creator.appendChild(creatorForm);
 
-	root.appendChild(classic);
+	root.appendChild(normal);
 	root.appendChild(load);
 	root.appendChild(timed);
 	root.appendChild(creator);
@@ -1159,9 +1062,10 @@ function main()
 		timedLevel: null,
 	};
 
+	/* for debugging purposes, pls ignore */
 	const puzzle = gridCreate(5, 5)
-	gridRandomize(puzzle)
-	gridUpdateLabels(puzzle)
+	gridRandomize(puzzle);
+	gridUpdateLabels(puzzle);
 	const encoded = gridEncode(puzzle);
 	const decoded = gridDecode(encoded);
 	decoded.labels = { col: [], row: [] };
@@ -1171,10 +1075,10 @@ function main()
 		.flatMap(x => [...B64.indexOf(x).toString(2).padStart(6, 0)]
 			).map((x, i) => i % 16 === 0 ? x+' ' : x).join(''));
 	console.log([...puzzle.cells]
-		.map(x => [...x.toString(2).padStart(SIZE_AU, 0)].filter((_, i) => i & 1).join("")))
+		.map(x => [...x.toString(2).padStart(SIZE_AU, 0)].filter((_, i) => i & 1).join("")));
 	console.log("DECODED", decoded);
 	console.log([...decoded.cells]
-		.map(x => [...x.toString(2).padStart(SIZE_AU, 0)].filter((_, i) => i & 1).join("")))
+		.map(x => [...x.toString(2).padStart(SIZE_AU, 0)].filter((_, i) => i & 1).join("")));
 
 	const root = document.getElementById("root");
 	const node = document.createElement("div");
